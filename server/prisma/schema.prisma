@@ -1,0 +1,216 @@
+// =============================================
+// Football Manager — схема базы данных
+// =============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Пользователи и менеджеры ----------
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  manager Manager?
+}
+
+model Manager {
+  id        String   @id @default(cuid())
+  name      String
+  experience Int     @default(0)        // растёт за сезоны
+  reputation Int     @default(50)       // 0-100, влияет на доступные клубы
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clubId    String?  @unique            // если уже выбрал клуб
+  club      Club?    @relation(fields: [clubId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// ---------- Клубы и лига ----------
+
+model League {
+  id       String @id @default(cuid())
+  name     String @unique               // "Premier League"
+  country  String                       // "England"
+  season   Int    @default(1)           // текущий сезон
+  clubs    Club[]
+  matches  Match[]
+  fixtures Fixture[]
+}
+
+model Club {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  shortName   String                    // "MCI", "LIV"
+  budget      BigInt                    // в евро
+  reputation  Int                       // 0-100, влияет на доступность для менеджеров
+  expectations String                   // "Bottom half OK", "Top 4", "Title"
+  seasonGoal  String                    // более конкретно: "Avoid relegation"
+  isControlledByAI Boolean @default(true)
+
+  leagueId    String
+  league      League  @relation(fields: [leagueId], references: [id])
+  manager     Manager?
+
+  players     Player[]
+  homeFixtures Fixture[] @relation("HomeClub")
+  awayFixtures Fixture[] @relation("AwayClub")
+  tactics     Tactic[]
+  standings   Standing[]
+}
+
+// ---------- Игроки ----------
+
+model Player {
+  id        String @id @default(cuid())
+  firstName String
+  lastName  String
+  age       Int
+  position  Position
+  nationality String
+
+  // Атрибуты (0-100)
+  pace      Int
+  shooting  Int
+  passing   Int
+  dribbling Int
+  defending Int
+  physical  Int
+  goalkeeping Int @default(10)          // только у вратарей высокое
+
+  // Контракт
+  wage         BigInt                   // в евро/неделя
+  marketValue  BigInt
+  contractUntil Int                     // сезон до которого контракт
+
+  // Состояние
+  morale    Int @default(70)            // 0-100
+  fitness   Int @default(100)           // 0-100, падает после матчей
+  form      Int @default(50)            // 0-100, краткосрочная форма
+  injured   Boolean @default(false)
+  injuryDaysLeft Int @default(0)
+
+  clubId    String?
+  club      Club?   @relation(fields: [clubId], references: [id])
+}
+
+enum Position {
+  GK    // Goalkeeper
+  CB    // Center Back
+  LB    // Left Back
+  RB    // Right Back
+  CDM   // Defensive Midfielder
+  CM    // Central Midfielder
+  CAM   // Attacking Midfielder
+  LM    // Left Midfielder
+  RM    // Right Midfielder
+  LW    // Left Winger
+  RW    // Right Winger
+  ST    // Striker
+}
+
+// ---------- Тактика ----------
+
+model Tactic {
+  id        String @id @default(cuid())
+  clubId    String
+  club      Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  formation String                      // "4-3-3", "4-4-2", "3-5-2"
+  style     TacticStyle                 // см. enum ниже
+  mentality Mentality                   // см. enum
+
+  // Линии (0-100, где сидит линия)
+  defensiveLine Int @default(50)
+  pressing      Int @default(50)
+  width         Int @default(50)
+  tempo         Int @default(50)
+
+  // Состав (11 стартовых + до 7 запасных) — храним массив id игроков в порядке
+  startingXI String[]                   // массив playerId
+  bench      String[]
+  isActive   Boolean @default(true)     // активная для следующего матча
+}
+
+enum TacticStyle {
+  TIKI_TAKA       // короткий пас, контроль
+  COUNTER_ATTACK  // глубокий блок + быстрые контры
+  GEGENPRESSING   // высокий прессинг, мгновенный возврат мяча
+  DIRECT          // прямой футбол, длинные передачи
+  POSSESSION      // владение без жёсткого прессинга
+  PARK_THE_BUS    // глухая оборона
+}
+
+enum Mentality {
+  VERY_DEFENSIVE
+  DEFENSIVE
+  BALANCED
+  ATTACKING
+  VERY_ATTACKING
+}
+
+// ---------- Матчи и расписание ----------
+
+model Fixture {
+  id          String   @id @default(cuid())
+  leagueId    String
+  league      League   @relation(fields: [leagueId], references: [id])
+  round       Int                       // номер тура (1-38)
+  scheduledAt DateTime                  // когда играется
+
+  homeClubId  String
+  homeClub    Club     @relation("HomeClub", fields: [homeClubId], references: [id])
+  awayClubId  String
+  awayClub    Club     @relation("AwayClub", fields: [awayClubId], references: [id])
+
+  match       Match?
+  status      FixtureStatus @default(SCHEDULED)
+}
+
+enum FixtureStatus {
+  SCHEDULED
+  PLAYED
+  POSTPONED
+}
+
+model Match {
+  id          String   @id @default(cuid())
+  fixtureId   String   @unique
+  fixture     Fixture  @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+  leagueId    String
+  league      League   @relation(fields: [leagueId], references: [id])
+
+  homeGoals   Int
+  awayGoals   Int
+
+  // Сжатый текст-репортаж и события — детали добавим позже
+  events      Json                      // массив событий: голы, карточки, замены
+  playedAt    DateTime @default(now())
+}
+
+// ---------- Турнирная таблица ----------
+
+model Standing {
+  id        String @id @default(cuid())
+  clubId    String
+  club      Club   @relation(fields: [clubId], references: [id])
+  season    Int
+
+  played    Int @default(0)
+  won       Int @default(0)
+  drawn     Int @default(0)
+  lost      Int @default(0)
+  goalsFor  Int @default(0)
+  goalsAgainst Int @default(0)
+  points    Int @default(0)
+
+  @@unique([clubId, season])
+}
