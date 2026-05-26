@@ -17,12 +17,15 @@ jobs:
         with:
           node-version: 18
 
+      - name: Install eas-cli
+        run: npm install -g eas-cli
+
       - name: Install dependencies
         working-directory: mobile
         run: npm install
 
       - name: EAS Update
         working-directory: mobile
-        run: npx eas-cli update --auto --non-interactive
+        run: eas update --auto --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
