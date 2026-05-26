@@ -10,6 +10,7 @@ import { C, FX } from '../design/theme';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
+  const [managerName, setManagerName] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,8 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
-      const { data } = await api.post(endpoint, { username, password });
+      const body = mode === 'login' ? { username, password } : { username, password, managerName };
+      const { data } = await api.post(endpoint, body);
       await setAuth(data.token, {
         id: data.user.id,
         username: data.user.username,
@@ -79,6 +81,19 @@ export default function LoginScreen() {
               secureTextEntry
             />
           </View>
+
+          {mode === 'register' && (
+            <View style={s.inputWrap}>
+              <Ionicons name="person-circle-outline" size={16} color={C.muted} />
+              <TextInput
+                style={s.input}
+                placeholder="Имя менеджера"
+                value={managerName}
+                onChangeText={setManagerName}
+                placeholderTextColor={C.subtle || '#7a8a9e'}
+              />
+            </View>
+          )}
 
           <TouchableOpacity
             style={[s.button, loading && { opacity: 0.5 }]}

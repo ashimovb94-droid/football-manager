@@ -19,7 +19,7 @@ const getInitials = (f, l) =>
   `${(f||'').charAt(0)}${(l||'').charAt(0)}`.toUpperCase();
 
 export default function OfferDetailScreen({ route, navigation }) {
-  const { offerId } = route.params;
+  const { offerId, incoming } = route.params;
   const [offer, setOffer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -31,7 +31,7 @@ export default function OfferDetailScreen({ route, navigation }) {
 
   const load = async () => {
     try {
-      const { data } = await api.get('/transfers/my-offers');
+      const { data } = await api.get(incoming ? '/transfers/incoming' : '/transfers/my-offers');
       const o = data.find(x => x.id === offerId);
       if (o) {
         setOffer(o);
@@ -94,8 +94,8 @@ export default function OfferDetailScreen({ route, navigation }) {
     <View style={[FX.bg, FX.center]}><Text style={{ color: C.muted }}>Оферта не найдена</Text></View>
   );
 
-  const isCounter = offer.status === 'COUNTER_OFFERED';
-  const isAccepted = offer.status === 'CLUB_ACCEPTED';
+  const isCounter = !incoming && offer.status === 'COUNTER_OFFERED';
+  const isAccepted = !incoming && offer.status === 'CLUB_ACCEPTED';
 
   return (
     <ScrollView style={FX.bg} contentContainerStyle={{ padding: 12, paddingBottom: 30 }}>
@@ -114,10 +114,10 @@ export default function OfferDetailScreen({ route, navigation }) {
           <Text style={s.playerOvr}>{offer.player.overall}</Text>
         </View>
 
-        <Text style={[s.sectionLabel, { marginTop: 14 }]}>КЛУБ-ПРОДАВЕЦ</Text>
+        <Text style={[s.sectionLabel, { marginTop: 14 }]}>{incoming ? 'КЛУБ-ПОКУПАТЕЛЬ' : 'КЛУБ-ПРОДАВЕЦ'}</Text>
         <View style={s.clubRow}>
-          {offer.toClub && <ClubBadge club={offer.toClub} size={28} />}
-          <Text style={s.clubName}>{offer.toClub?.name}</Text>
+          {(incoming ? offer.fromClub : offer.toClub) && <ClubBadge club={incoming ? offer.fromClub : offer.toClub} size={28} />}
+          <Text style={s.clubName}>{(incoming ? offer.fromClub : offer.toClub)?.name}</Text>
         </View>
       </View>
 
@@ -126,7 +126,7 @@ export default function OfferDetailScreen({ route, navigation }) {
         <Text style={s.sectionLabel}>ХОД ПЕРЕГОВОРОВ</Text>
 
         <View style={s.row}>
-          <Text style={s.rowLabel}>ВАШЕ ПРЕДЛОЖЕНИЕ</Text>
+          <Text style={s.rowLabel}>{incoming ? (offer.type === 'LOAN' ? 'ПЛАТЯТ ЗА АРЕНДУ' : 'ПРЕДЛОЖИЛИ') : 'ВАШЕ ПРЕДЛОЖЕНИЕ'}</Text>
           <Text style={s.rowValue}>{fmtM(offer.amount)}</Text>
         </View>
 
@@ -160,6 +160,116 @@ export default function OfferDetailScreen({ route, navigation }) {
               </View>
             </View>
           ))}
+        </View>
+      )}
+
+      {/* Действия для INCOMING оферт (AI клуб предложил нам) */}
+      {incoming && (offer.status === 'PENDING' || offer.status === 'COUNTER_OFFERED') && (
+        <View style={s.card}>
+          <Text style={s.sectionLabel}>ВАШИ ДЕЙСТВИЯ</Text>
+
+          {/* Принять — получить деньги */}
+          <TouchableOpacity
+            style={[s.actionBtn, { borderColor: C.green, backgroundColor: 'rgba(46,204,113,0.1)' }]}
+            disabled={submitting}
+            onPress={() => {
+              Alert.alert(
+                'Принять предложение?',
+                `Получите ${fmtM(offer.amount)}. Игрок ${offer.type === 'LOAN' ? 'уедет в аренду' : 'перейдёт навсегда'}.`,
+                [
+                  { text: 'Отмена', style: 'cancel' },
+                  { text: 'Принять', onPress: async () => {
+                    setSubmitting(true);
+                    try {
+                      const { data } = await api.post('/transfers/incoming/respond', { offerId, action: 'ACCEPT' });
+                      Alert.alert(data.result === 'LOAN_DONE' ? '✓ Аренда оформлена' : '✓ Игрок продан', `Получили ${fmtM(offer.amount)}`, [
+                        { text: 'OK', onPress: () => navigation.popToTop() },
+                      ]);
+                    } catch (err) {
+                      Alert.alert('Ошибка', err.response?.data?.error || err.message);
+                    } finally { setSubmitting(false); }
+                  } },
+                ]
+              );
+            }}
+          >
+            <Ionicons name="checkmark-circle" size={18} color={C.green} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={[s.actionTitle, { color: C.green }]}>ПРИНЯТЬ ПРЕДЛОЖЕНИЕ</Text>
+              <Text style={s.actionSub}>Получить {fmtM(offer.amount)}</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Контр-предложить — попросить больше */}
+          <View style={[s.actionBtn, { borderColor: C.gold, backgroundColor: 'rgba(241,196,15,0.08)', flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="trending-up" size={18} color={C.gold} />
+              <Text style={[s.actionTitle, { color: C.gold, marginLeft: 10 }]}>ПОПРОСИТЬ БОЛЬШЕ</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 8 }}>
+              <TextInput
+                style={s.input}
+                value={counterBack}
+                onChangeText={setCounterBack}
+                keyboardType="numeric"
+                placeholder={String(Math.round(Number(offer.amount) * 1.2 / 1_000_000))}
+                placeholderTextColor={C.subtle}
+              />
+              <Text style={{ color: C.muted, fontWeight: '700' }}>M€</Text>
+              <TouchableOpacity
+                style={s.sendBtn}
+                disabled={submitting}
+                onPress={async () => {
+                  setSubmitting(true);
+                  try {
+                    const { data } = await api.post('/transfers/incoming/respond', {
+                      offerId,
+                      action: 'COUNTER',
+                      counterAmount: Number(counterBack) * 1_000_000,
+                    });
+                    if (data.result === 'AI_ACCEPTED') {
+                      Alert.alert('✓ Клуб согласился!', `Получили ${fmtM(data.amount)}`, [
+                        { text: 'OK', onPress: () => navigation.popToTop() },
+                      ]);
+                    } else if (data.result === 'AI_REJECTED') {
+                      Alert.alert('Отказ', data.note);
+                      navigation.goBack();
+                    }
+                  } catch (err) {
+                    Alert.alert('Ошибка', err.response?.data?.error || err.message);
+                  } finally { setSubmitting(false); }
+                }}
+              >
+                <Ionicons name="paper-plane" size={14} color={C.gold} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Отклонить */}
+          <TouchableOpacity
+            style={[s.actionBtn, { borderColor: C.red, backgroundColor: 'rgba(231,76,60,0.08)' }]}
+            disabled={submitting}
+            onPress={() => {
+              Alert.alert('Отклонить?', 'Клуб уйдёт ни с чем.', [
+                { text: 'Назад', style: 'cancel' },
+                { text: 'Отклонить', style: 'destructive', onPress: async () => {
+                  setSubmitting(true);
+                  try {
+                    await api.post('/transfers/incoming/respond', { offerId, action: 'REJECT' });
+                    navigation.goBack();
+                  } catch (err) {
+                    Alert.alert('Ошибка', err.response?.data?.error || err.message);
+                  } finally { setSubmitting(false); }
+                } },
+              ]);
+            }}
+          >
+            <Ionicons name="close-circle" size={18} color={C.red} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={[s.actionTitle, { color: C.red }]}>ОТКЛОНИТЬ</Text>
+              <Text style={s.actionSub}>Закрыть переговоры</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       )}
 

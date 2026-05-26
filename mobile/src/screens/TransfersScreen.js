@@ -41,6 +41,7 @@ export default function TransfersScreen({ navigation }) {
 
   const loadList = useCallback(async () => {
     setLoading(true);
+    setItems([]);
     try {
       const posParam = posFilter !== 'ALL' ? `?position=${posFilter}` : '';
       if (tab === 'market') {
@@ -51,6 +52,9 @@ export default function TransfersScreen({ navigation }) {
         setItems(data);
       } else if (tab === 'offers') {
         const { data } = await api.get('/transfers/my-offers');
+        setItems(data);
+      } else if (tab === 'incoming') {
+        const { data } = await api.get('/transfers/incoming');
         setItems(data);
       }
     } catch (err) {
@@ -90,6 +94,7 @@ export default function TransfersScreen({ navigation }) {
         <Tab label="РЫНОК" active={tab==='market'} onPress={() => setTab('market')} />
         <Tab label="СВОБОДНЫЕ" active={tab==='free'} onPress={() => setTab('free')} />
         <Tab label="ОФЕРТЫ" active={tab==='offers'} onPress={() => setTab('offers')} />
+        <Tab label="ВХОДЯЩИЕ" active={tab==='incoming'} onPress={() => setTab('incoming')} />
         <Tab label="СКАУТЫ" active={false} onPress={() => navigation.navigate('Scouts')} />
       </View>
 
@@ -125,11 +130,12 @@ export default function TransfersScreen({ navigation }) {
           contentContainerStyle={{ padding: 12, paddingBottom: 30 }}
           ListEmptyComponent={
             <Text style={s.empty}>
-              {tab === 'offers' ? 'У вас нет активных оферт' : 'Никого не найдено'}
+              {tab === 'offers' ? 'У вас нет активных оферт' : tab === 'incoming' ? 'Пока никто не предлагал' : 'Никого не найдено'}
             </Text>
           }
           renderItem={({ item }) => {
             if (tab === 'offers') return renderOfferCard(item, navigation);
+            if (tab === 'incoming') return renderIncomingCard(item, navigation);
             return renderPlayerCard(item, tab, navigation, windowState.open);
           }}
         />
@@ -154,7 +160,7 @@ function renderPlayerCard(p, tab, navigation, windowOpen) {
       style={s.playerCard}
       onPress={() => navigation.navigate('PlayerOffer', { playerId: p.id, mode: tab === 'free' ? 'free' : 'market' })}
       activeOpacity={0.7}
-      disabled={!windowOpen}
+      disabled={!windowOpen && tab !== "free"}
     >
       <View style={[s.avatar, { borderColor: POS_COLOR[group] }]}>
         <Text style={s.avatarText}>{getInitials(p.firstName, p.lastName)}</Text>
@@ -189,6 +195,7 @@ function renderPlayerCard(p, tab, navigation, windowOpen) {
 }
 
 function renderOfferCard(o, navigation) {
+  if (!o.player) return null;
   if (!o?.player) return null;
   const statusColors = {
     PENDING: C.muted,
@@ -234,6 +241,55 @@ function renderOfferCard(o, navigation) {
       {(o.status === 'CLUB_ACCEPTED' || o.status === 'COUNTER_OFFERED') && (
         <View style={s.offerCTA}>
           <Text style={s.offerCTAText}>→ {o.status === 'CLUB_ACCEPTED' ? 'Завершить сделку' : 'Посмотреть условия'}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+
+function renderIncomingCard(o, navigation) {
+  if (!o.player) return null;
+  const isLoan = o.type === 'LOAN';
+  const statusColors = {
+    PENDING: C.gold,
+    COUNTER_OFFERED: C.accent,
+    PLAYER_ACCEPTED: C.green,
+    REJECTED_BY_CLUB: C.red,
+    CANCELLED: C.subtle,
+  };
+  const statusLabel = {
+    PENDING: isLoan ? 'Хотят в аренду' : 'Хотят купить',
+    COUNTER_OFFERED: 'Ждут вашего ответа',
+    PLAYER_ACCEPTED: '✓ Продан',
+    REJECTED_BY_CLUB: 'Клуб отозвал',
+    CANCELLED: 'Отменено',
+  };
+  const color = statusColors[o.status] || C.muted;
+  const tappable = o.status === 'PENDING' || o.status === 'COUNTER_OFFERED';
+
+  return (
+    <TouchableOpacity
+      style={[s.offerCard, { borderLeftColor: color }]}
+      onPress={() => tappable && navigation.navigate('OfferDetail', { offerId: o.id, incoming: true })}
+      activeOpacity={0.7}
+    >
+      <View style={s.offerTop}>
+        <Text style={s.offerPlayer}>{o.player.firstName} {o.player.lastName}</Text>
+        <Text style={s.offerAmount}>{fmtM(o.amount)}</Text>
+      </View>
+      <View style={s.offerMeta}>
+        <View style={s.clubRow}>
+          {o.fromClub && <ClubBadge club={o.fromClub} size={14} />}
+          <Text style={s.clubText} numberOfLines={1}>{o.fromClub?.name || '—'}</Text>
+        </View>
+        <Text style={[s.offerStatus, { color }]} numberOfLines={2}>
+          {isLoan ? '🤝 ' : '💰 '}{statusLabel[o.status]}
+        </Text>
+      </View>
+      {tappable && (
+        <View style={s.offerCTA}>
+          <Text style={s.offerCTAText}>→ Открыть детали</Text>
         </View>
       )}
     </TouchableOpacity>

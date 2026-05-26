@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Modal, TextInput,
+  View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Alert, Modal, TextInput,
   ActivityIndicator, RefreshControl, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,6 +47,8 @@ export default function SquadScreen() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const toggle = (group) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -101,7 +104,10 @@ export default function SquadScreen() {
             {expanded[group] && list.map(p => (
               <View key={p.id} style={[s.row, p.injured && s.rowInjured]}>
                 <View style={[s.avatar, { borderColor: POS_COLOR[group] }]}>
-                  <Text style={s.avatarText}>{getInitials(p.firstName, p.lastName)}</Text>
+                  {p.photoUrl
+                    ? <Image source={{ uri: p.photoUrl }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+                    : <Text style={s.avatarText}>{getInitials(p.firstName, p.lastName)}</Text>
+                  }
                 </View>
                 <View style={s.info}>
                   <View style={s.nameRow}>

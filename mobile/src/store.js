@@ -13,11 +13,22 @@ export const useAuthStore = create((set, get) => ({
         AsyncStorage.getItem('token'),
         AsyncStorage.getItem('user'),
       ]);
-      set({
-        token: token || null,
-        user: userJson ? JSON.parse(userJson) : null,
-        isLoading: false,
-      });
+      if (token) {
+        // Всегда берём свежие данные с сервера
+        try {
+          const { api } = require('./api');
+          const { data } = await api.get('/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          await AsyncStorage.setItem('user', JSON.stringify(data));
+          set({ token, user: data, isLoading: false });
+        } catch {
+          // Сервер недоступен — используем кэш
+          set({ token, user: userJson ? JSON.parse(userJson) : null, isLoading: false });
+        }
+      } else {
+        set({ token: null, user: null, isLoading: false });
+      }
     } catch {
       set({ isLoading: false });
     }

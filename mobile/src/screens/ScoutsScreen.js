@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, Modal, TextInput, Alert, ScrollView,
@@ -77,10 +78,7 @@ export default function ScoutsScreen({ navigation }) {
   }, [tab]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => {
-    const unsub = navigation.addListener('focus', load);
-    return unsub;
-  }, [navigation, load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const sendMission = async () => {
     if (!missionFor) return;

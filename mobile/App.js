@@ -21,6 +21,9 @@ import TransfersScreen from './src/screens/TransfersScreen';
 import PlayerOfferScreen from './src/screens/PlayerOfferScreen';
 import ScoutsScreen from './src/screens/ScoutsScreen';
 import OfferDetailScreen from './src/screens/OfferDetailScreen';
+import SeasonResultsScreen from './src/screens/SeasonResultsScreen';
+import TrainingScreen from './src/screens/TrainingScreen';
+import FiredScreen from './src/screens/FiredScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -91,6 +94,7 @@ export default function App() {
   }
 
   const hasClub = user?.manager?.clubId != null;
+  const justFired = user?.manager?.justFired === true;
 
   return (
     <SafeAreaProvider>
@@ -110,6 +114,11 @@ export default function App() {
           >
             {!token ? (
               <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            ) : justFired ? (
+              <>
+                <Stack.Screen name="Fired" component={FiredScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="ClubSelect" component={ClubSelectScreen} options={{ title: 'ВЫБОР КЛУБА' }} />
+              </>
             ) : !hasClub ? (
               <Stack.Screen name="ClubSelect" component={ClubSelectScreen} options={{ title: 'ВЫБОР КЛУБА' }} />
             ) : (
@@ -124,6 +133,8 @@ export default function App() {
                 <Stack.Screen name="PlayerOffer" component={PlayerOfferScreen} options={{ title: 'ИГРОК' }} />
                 <Stack.Screen name="Scouts"      component={ScoutsScreen}      options={{ title: 'СКАУТЫ' }} />
                 <Stack.Screen name="OfferDetail" component={OfferDetailScreen} options={{ title: 'ДЕТАЛИ ОФЕРТЫ' }} />
+                <Stack.Screen name="SeasonResults" component={SeasonResultsScreen} options={{ title: 'ИТОГИ СЕЗОНА' }} />
+                <Stack.Screen name="Training" component={TrainingScreen} options={{ title: 'ТРЕНИРОВКИ' }} />
               </>
             )}
           </Stack.Navigator>

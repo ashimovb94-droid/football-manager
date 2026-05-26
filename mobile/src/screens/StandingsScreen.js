@@ -94,9 +94,16 @@ export default function StandingsScreen() {
               </View>
               <View style={s.colName}>
                 <ClubBadge club={clubData} size={22} />
-                <Text style={[s.cell, s.clubName, isMine && s.mineText]} numberOfLines={1}>
-                  {item.clubName}
-                </Text>
+                <View>
+                  <Text style={[s.cell, s.clubName, isMine && s.mineText]} numberOfLines={1}>
+                    {item.clubName}
+                  </Text>
+                  {item.managerName && (
+                    <Text style={{ color: C.accent, fontSize: 9, paddingLeft: 4 }} numberOfLines={1}>
+                      👤 {item.managerName}
+                    </Text>
+                  )}
+                </View>
               </View>
               <Text style={[s.cell, s.colNum]}>{item.played}</Text>
               <Text style={[s.cell, s.colGD]}>{item.goalsFor}-{item.goalsAgainst}</Text>

@@ -87,6 +87,19 @@ export default function FixturesScreen({ navigation }) {
 
   useEffect(() => { reloadFixtures(); }, [reloadFixtures]);
 
+  // Авто-обновление при возврате на экран + раз в 60с пока в фокусе
+  useEffect(() => {
+    let iv = null;
+    const start = navigation.addListener('focus', () => {
+      reloadFixtures();
+      iv = setInterval(reloadFixtures, 60000);
+    });
+    const stop = navigation.addListener('blur', () => {
+      if (iv) { clearInterval(iv); iv = null; }
+    });
+    return () => { start(); stop(); if (iv) clearInterval(iv); };
+  }, [navigation, reloadFixtures]);
+
   const isLastRound = round >= MAX_ROUND;
   const isFirstRound = round <= 1;
 

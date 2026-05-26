@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback, useLayoutEffect } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, Image, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, ScrollView, Modal, ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,19 +20,55 @@ const MENT_LABEL = {
   BALANCED: 'Сбалансир.', ATTACKING: 'Атакующ.',
   VERY_ATTACKING: 'Очень атакующ.',
 };
+// Линии раскладки: каждая запись — отдельная линия на поле
+// Порядок: от вратаря к атаке
 const LAYOUTS = {
-  '4-3-3':   { GK: 1, DEF: 4, MID: 3, FWD: 3 },
-  '4-4-2':   { GK: 1, DEF: 4, MID: 4, FWD: 2 },
-  '3-5-2':   { GK: 1, DEF: 3, MID: 5, FWD: 2 },
-  '4-2-3-1': { GK: 1, DEF: 4, MID: 5, FWD: 1 },
-  '5-3-2':   { GK: 1, DEF: 5, MID: 3, FWD: 2 },
+  '4-3-3':   [
+    { group: 'GK',  count: 1 },
+    { group: 'DEF', count: 4 },
+    { group: 'MID', count: 3 },
+    { group: 'FWD', count: 3 },
+  ],
+  '4-4-2':   [
+    { group: 'GK',  count: 1 },
+    { group: 'DEF', count: 4 },
+    { group: 'MID', count: 4 },
+    { group: 'FWD', count: 2 },
+  ],
+  '3-5-2':   [
+    { group: 'GK',  count: 1 },
+    { group: 'DEF', count: 3 },
+    { group: 'MID', count: 5 },
+    { group: 'FWD', count: 2 },
+  ],
+  '4-2-3-1': [
+    { group: 'GK',  count: 1 },
+    { group: 'DEF', count: 4 },
+    { group: 'MID', count: 2 },  // 2 опорника
+    { group: 'MID', count: 3 },  // 3 атакующих п/з
+    { group: 'FWD', count: 1 },
+  ],
+  '5-3-2':   [
+    { group: 'GK',  count: 1 },
+    { group: 'DEF', count: 5 },
+    { group: 'MID', count: 3 },
+    { group: 'FWD', count: 2 },
+  ],
 };
+
+// Подсчёт количества игроков по группам для autoFill
+function countByGroup(layout) {
+  const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+  for (const line of layout) counts[line.group] += line.count;
+  return counts;
+}
 
 const getInitials = (f, l) =>
   `${(f||'').charAt(0)}${(l||'').charAt(0)}`.toUpperCase();
 
 export default function TacticsScreen({ navigation }) {
   const [tactic, setTactic] = useState(null);
+  const justSavedRef = useRef(false);
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -51,7 +88,7 @@ export default function TacticsScreen({ navigation }) {
         api.get('/my/tactic'),
         api.get('/my/squad'),
       ]);
-      setTactic(tRes.data);
+      setTactic(tRes.data); console.log('[TACTICS] loaded from server:', tRes.data.formation);
       setPlayers(sRes.data.players);
       setFormation(tRes.data.formation);
       setStyle(tRes.data.style);
@@ -63,9 +100,31 @@ export default function TacticsScreen({ navigation }) {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!tactic) return;
+    const unsub = navigation.addListener('blur', () => {
+      console.log('[TACTICS] blur fired, justSaved=', justSavedRef.current, 'tactic.formation=', tactic.formation);
+      if (justSavedRef.current) {
+        // НЕ сбрасываем флаг здесь, он сбросится сам через 3 сек
+        return;
+      }
+      // Сбрасываем локальные изменения если не были сохранены
+      setFormation(tactic.formation);
+      setStyle(tactic.style);
+      setMentality(tactic.mentality);
+      setXi(tactic.startingXI);
+      setBench(tactic.bench);
+    });
+    return unsub;
+  }, [navigation, tactic]);
+
+    useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const save = useCallback(async () => {
+    justSavedRef.current = true;
+    // Автосброс флага через 3 сек чтобы он не залип навсегда
+    setTimeout(() => { justSavedRef.current = false; }, 3000);
     if (xi.length !== 11) {
       Alert.alert('Не сохранить', 'В стартовом составе должно быть 11 игроков');
       return;
@@ -82,13 +141,21 @@ export default function TacticsScreen({ navigation }) {
         formation, style, mentality,
         startingXI: xi, bench: bench.filter(Boolean),
       });
+      // Обновляем локальный snapshot чтобы blur не сбрасывал к старой
+      setTactic({
+        ...tactic,
+        formation, style, mentality,
+        startingXI: xi,
+        bench: bench.filter(Boolean),
+      });
       navigation.goBack();
     } catch (err) {
       Alert.alert('Ошибка', err.response?.data?.error || err.message);
     } finally { setSaving(false); }
-  }, [xi, bench, formation, style, mentality, players, navigation]);
+  }, [xi, bench, formation, style, mentality, players, navigation, tactic]);
 
-  useLayoutEffect(() => {
+
+    useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity onPress={save} disabled={saving} style={{ paddingHorizontal: 14 }}>
@@ -113,8 +180,12 @@ export default function TacticsScreen({ navigation }) {
       byGroup[g].sort((a, b) => overall(b) - overall(a));
     }
     const newXi = [];
-    for (const [g, count] of Object.entries(layout)) {
-      newXi.push(...byGroup[g].slice(0, count).map(p => p.id));
+    // Идём по линиям в порядке layout, забирая лучших из каждой группы
+    const taken = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+    for (const line of layout) {
+      const group = line.group;
+      newXi.push(...byGroup[group].slice(taken[group], taken[group] + line.count).map(p => p.id));
+      taken[group] += line.count;
     }
     const xiSet = new Set(newXi);
     const newBench = players
@@ -126,14 +197,24 @@ export default function TacticsScreen({ navigation }) {
     setBench(newBench);
   };
 
-  const handleFormationChange = (f) => { setFormation(f); autoFill(f); };
+  const handleFormationChange = (f) => {
+    if (f === formation) return;
+    setFormation(f);
+    // Если возвращаемся к сохранённой схеме — восстанавливаем сохранённый состав
+    if (tactic && f === tactic.formation) {
+      setXi(tactic.startingXI);
+      setBench(tactic.bench);
+    } else {
+      autoFill(f);
+    }
+  };
 
   const getSlotGroup = (slotIndex, curr) => {
     const layout = LAYOUTS[curr];
     let i = 0;
-    for (const [g, count] of Object.entries(layout)) {
-      if (slotIndex < i + count) return g;
-      i += count;
+    for (const line of layout) {
+      if (slotIndex < i + line.count) return line.group;
+      i += line.count;
     }
     return 'MID';
   };
@@ -172,9 +253,9 @@ export default function TacticsScreen({ navigation }) {
   const layout = LAYOUTS[formation];
   const lines = [];
   let idx = 0;
-  for (const [g, count] of Object.entries(layout)) {
-    lines.push({ group: g, ids: xi.slice(idx, idx + count), startIndex: idx });
-    idx += count;
+  for (const line of layout) {
+    lines.push({ group: line.group, ids: xi.slice(idx, idx + line.count), startIndex: idx });
+    idx += line.count;
   }
   const reversed = [...lines].reverse();
 
@@ -210,7 +291,7 @@ export default function TacticsScreen({ navigation }) {
                         p?.injured && s.tokenInjured,
                       ]}>
                         <Text style={s.tokenText}>
-                          {p ? getInitials(p.firstName, p.lastName) : '?'}
+                          {p ? (p.photoUrl ? <Image source={{uri: p.photoUrl}} style={{width:44,height:44,borderRadius:22}} /> : getInitials(p.firstName, p.lastName)) : '?'}
                         </Text>
                         <View style={s.ovrBadge}>
                           <Text style={s.ovrText}>{p ? overall(p) : '?'}</Text>
@@ -219,6 +300,11 @@ export default function TacticsScreen({ navigation }) {
                       <Text style={s.tokenName} numberOfLines={1}>
                         {p ? p.lastName : '—'}
                       </Text>
+                    {p && (
+                      <View style={[s.posTag, { borderColor: POS_COLOR[line.group] }]}>
+                        <Text style={[s.posTagText, { color: POS_COLOR[line.group] }]}>{p.position}</Text>
+                      </View>
+                    )}
                     </TouchableOpacity>
                   );
                 })}
@@ -279,7 +365,7 @@ export default function TacticsScreen({ navigation }) {
                         { borderColor: POS_COLOR[POSITION_GROUP[p.position]] },
                         p.injured && s.tokenInjured,
                       ]}>
-                        <Text style={s.benchTokenText}>{getInitials(p.firstName, p.lastName)}</Text>
+                        {p.photoUrl ? <Image source={{uri: p.photoUrl}} style={{width:32,height:32,borderRadius:16}} /> : <Text style={s.benchTokenText}>{getInitials(p.firstName, p.lastName)}</Text>}
                       </View>
                       <Text style={s.benchName} numberOfLines={1}>{p.lastName}</Text>
                     </>
@@ -323,11 +409,15 @@ export default function TacticsScreen({ navigation }) {
                 const inBench = bench.includes(item.id);
                 return (
                   <TouchableOpacity
-                    style={[s.modalItem, item.injured && s.modalItemInjured]}
+                    style={[
+                      s.modalItem,
+                      item.injured && s.modalItemInjured,
+                      (inXi || inBench) && { opacity: 0.55 },
+                    ]}
                     onPress={() => pickPlayer(item.id)}
                   >
                     <View style={[s.modalAvatar, { borderColor: POS_COLOR[POSITION_GROUP[item.position]] }]}>
-                      <Text style={s.modalAvatarText}>{getInitials(item.firstName, item.lastName)}</Text>
+                      {item.photoUrl ? <Image source={{uri: item.photoUrl}} style={{width:40,height:40,borderRadius:20}} /> : <Text style={s.modalAvatarText}>{getInitials(item.firstName, item.lastName)}</Text>}
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={[s.modalName, item.injured && { color: C.muted }]}>
@@ -337,9 +427,18 @@ export default function TacticsScreen({ navigation }) {
                         {item.position} · {item.age}л · фит{' '}
                         <Text style={{ color: fitnessColor(item.fitness) }}>{item.fitness}</Text>
                         {item.injured ? ` · травма ${item.injuryDaysLeft}д` : ''}
-                        {inXi ? ' · в составе' : inBench ? ' · в запасе' : ''}
                       </Text>
                     </View>
+                    {inXi && (
+                      <View style={[s.statusBadge, { backgroundColor: 'rgba(46,204,113,0.15)', borderColor: C.green }]}>
+                        <Text style={[s.statusBadgeText, { color: C.green }]}>В ОСНОВЕ</Text>
+                      </View>
+                    )}
+                    {inBench && !inXi && (
+                      <View style={[s.statusBadge, { backgroundColor: 'rgba(79,195,247,0.15)', borderColor: C.accent }]}>
+                        <Text style={[s.statusBadgeText, { color: C.accent }]}>В ЗАПАСЕ</Text>
+                      </View>
+                    )}
                     <Text style={s.modalOvr}>{overall(item)}</Text>
                   </TouchableOpacity>
                 );
@@ -409,6 +508,19 @@ function DropdownModal({ visible, title, items, current, labels, color, onPick, 
 }
 
 const s = StyleSheet.create({
+  posTag: {
+    paddingHorizontal: 5, paddingVertical: 1,
+    borderRadius: 4, borderWidth: 1,
+    marginTop: 2,
+    alignSelf: 'center',
+  },
+  posTagText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  statusBadge: {
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6, borderWidth: 1,
+    marginHorizontal: 6,
+  },
+  statusBadgeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
   bg: { flex: 1, backgroundColor: C.bg },
   darkOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,14,23,0.55)' },
 

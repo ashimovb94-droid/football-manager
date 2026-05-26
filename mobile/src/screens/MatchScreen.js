@@ -9,7 +9,7 @@ import ClubBadge from '../design/ClubBadge';
 import { C, FX } from '../design/theme';
 
 export default function MatchScreen({ route }) {
-  const { fixtureId } = route.params;
+  const { fixtureId, friendly, events: friendlyEvents } = route.params;
   const user = useAuthStore((s) => s.user);
   const myClubId = user?.manager?.clubId;
 
@@ -26,6 +26,14 @@ export default function MatchScreen({ route }) {
   useEffect(() => {
     (async () => {
       try {
+        if (friendly) {
+          setMatch(friendly);
+          const { data: clubs } = await api.get('/clubs');
+          setClubsMap(Object.fromEntries(clubs.map(c => [c.id, c])));
+          if (friendly.result) startAnim(friendly);
+          else setPhase('done');
+          return;
+        }
         const { data } = await api.get(`/matches/${fixtureId}`);
         setMatch(data);
         const { data: clubs } = await api.get('/clubs');

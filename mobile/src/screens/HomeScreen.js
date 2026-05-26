@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, ImageBackground,
@@ -60,12 +61,72 @@ function MiniPitch({ formation = '4-3-3' }) {
   );
 }
 
+
+function FriendlyCard({ navigation }) {
+  const [status, setStatus] = useState({ available: 0, played: 0 });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get('/my/friendly').then(r => setStatus(r.data)).catch(() => {});
+  }, []);
+
+  const playFriendly = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.post('/my/friendly');
+      setStatus(s => ({ ...s, available: s.available - 1, played: s.played + 1 }));
+      // Нормализуем friendly под формат MatchScreen
+      const friendlyMatch = {
+        home: data.friendly.homeClub,
+        away: data.friendly.awayClub,
+        result: { home: data.friendly.homeGoals, away: data.friendly.awayGoals },
+        events: data.sim?.events ?? [],
+        round: 'Товарняк',
+        competition: { name: 'Предсезонка' },
+      };
+      navigation.navigate('Match', { fixtureId: null, friendly: friendlyMatch, events: data.sim?.events ?? [] });
+    } catch (e) {
+      Alert.alert('Ошибка', e.response?.data?.error || e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={[FX.card, { alignItems: 'center', paddingVertical: 20 }]}>
+      <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 14, marginBottom: 4, letterSpacing: 1 }}>
+        🏋️ ПРЕДСЕЗОНКА
+      </Text>
+      <Text style={{ color: C.subtext, fontSize: 12, marginBottom: 12 }}>
+        Товарняки сегодня: {status.played}/{status.played + status.available}
+      </Text>
+      {status.available > 0 ? (
+        <TouchableOpacity
+          style={{ backgroundColor: '#4CAF50', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 }}
+          onPress={playFriendly}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>
+            {loading ? 'Идёт матч...' : '⚽ СЫГРАТЬ ТОВАРНЯК'}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <Text style={{ color: C.subtext, fontSize: 12 }}>Лимит на сегодня исчерпан</Text>
+      )}
+    </View>
+  );
+}
+
 export default function HomeScreen({ navigation }) {
   const user   = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
   const [data, setData] = useState(null);
   const [nextMatch, setNextMatch] = useState(null);
+  const [seasonOver, setSeasonOver] = useState(false);
+  const [phase, setPhase] = useState(null);
+  const [daysLeft, setDaysLeft] = useState(null);
   const [nextRoundAt, setNextRoundAt] = useState(null);
   const [tactic, setTactic] = useState(null);
   const [clubsMap, setClubsMap] = useState({});
@@ -77,6 +138,10 @@ export default function HomeScreen({ navigation }) {
   const load = useCallback(async () => {
     try {
       const { data: me } = await api.get('/auth/me');
+        const { data: ss } = await api.get('/season/state');
+        setPhase(ss.phase);
+        setDaysLeft(ss.daysLeft);
+        setSeasonOver(ss.phase === 'SUMMER_WINDOW' || ss.phase === 'END_SEASON');
       setData(me);
 
       const { data: clubs } = await api.get('/clubs');
@@ -111,9 +176,18 @@ export default function HomeScreen({ navigation }) {
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Авто-обновление каждые 60 сек пока экран в фокусе
   useEffect(() => {
-    const unsub = navigation.addListener('focus', load);
-    return unsub;
+    let iv = null;
+    const start = navigation.addListener('focus', () => {
+      iv = setInterval(load, 15000);
+    });
+    const stop = navigation.addListener('blur', () => {
+      if (iv) { clearInterval(iv); iv = null; }
+    });
+    return () => { start(); stop(); if (iv) clearInterval(iv); };
   }, [navigation, load]);
 
   if (loading) return (
@@ -161,22 +235,46 @@ export default function HomeScreen({ navigation }) {
             </View>
           </TouchableOpacity>
 
-          {/* КАРТОЧКА МАТЧА */}
-          <View style={FX.card}>
-            <Text style={s.sectionBadge}>СЛЕДУЮЩИЙ МАТЧ</Text>
-            <View style={s.matchRow}>
-              <ClubBadge club={nextMatch?.home || club} size={60} />
-              <View style={s.matchCenter}>
-                <Text style={s.matchVs}>VS</Text>
-                <Text style={s.matchTime}>{countdown || '20:45'}</Text>
+          {/* КАРТОЧКА МАТЧА / КОНЕЦ СЕЗОНА */}
+          {seasonOver ? (
+            <TouchableOpacity
+              style={[FX.card, { alignItems: 'center', paddingVertical: 28 }]}
+              onPress={() => navigation.navigate('SeasonResults')}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.sectionBadge, { color: '#FFD700', fontSize: 16, marginBottom: 8 }]}>
+                🏁 СЕЗОН ЗАВЕРШЁН
+              </Text>
+              <Text style={{ color: '#aaa', fontSize: 12, textAlign: 'center', marginBottom: 12 }}>
+                Нажмите для просмотра итогов
+              </Text>
+              {phase === 'SUMMER_WINDOW' && daysLeft != null && (
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }}>
+                  <Text style={{ color: '#fff', fontSize: 13, textAlign: 'center' }}>
+                    ⏱ Предсезонка через {Math.floor(daysLeft)}д {Math.floor((daysLeft % 1) * 24)}ч
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ) : phase === 'PRESEASON' ? (
+            <FriendlyCard navigation={navigation} />
+          ) : (
+            <View style={FX.card}>
+              <Text style={s.sectionBadge}>СЛЕДУЮЩИЙ МАТЧ</Text>
+              <View style={s.matchRow}>
+                <ClubBadge club={nextMatch?.home || club} size={60} />
+                <View style={s.matchCenter}>
+                  <Text style={s.matchVs}>VS</Text>
+                  <Text style={s.matchTime}>{countdown || '20:45'}</Text>
+                </View>
+                <ClubBadge club={nextMatch?.away || club} size={60} />
               </View>
-              <ClubBadge club={nextMatch?.away || club} size={60} />
+              <Text style={s.stadiumName}>
+                {((nextMatch?.home?.name || club?.name || 'ASTON VILLA') + ' АРЕНА').toUpperCase()}
+              </Text>
+              <Text style={s.roundText}>ТУР {nextMatch?.round || 1}</Text>
             </View>
-            <Text style={s.stadiumName}>
-              {((nextMatch?.home?.name || club?.name || 'ASTON VILLA') + ' АРЕНА').toUpperCase()}
-            </Text>
-            <Text style={s.roundText}>ТУР {nextMatch?.round || 1}</Text>
-          </View>
+          )}
 
           {/* ТАКТИКА */}
           <TouchableOpacity
@@ -201,7 +299,7 @@ export default function HomeScreen({ navigation }) {
             <ActionBtn icon="trophy" label="КУБОК" onPress={() => navigation.navigate('Cup')} />
             <ActionBtn icon="briefcase" label="ОФИС" onPress={() => {}} />
             
-            <ActionBtn icon="barbell" label="ТРЕНИРОВКИ" onPress={() => {}} />
+            <ActionBtn icon="barbell" label="ТРЕНИРОВКИ" onPress={() => navigation.navigate('Training')} />
             <ActionBtn icon="globe" label="ОНЛАЙН" onPress={() => {}} />
             <ActionBtn icon="settings" label="НАСТРОЙКИ" onPress={() => {}} />
           </View>
