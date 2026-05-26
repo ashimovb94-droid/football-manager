@@ -15,10 +15,18 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.bakhyt11.mobile",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "84488f88-6e25-469b-bd6e-e3c5faaa5106"
+      }
+    },
+    "owner": "bakhyt11"
   }
 }
