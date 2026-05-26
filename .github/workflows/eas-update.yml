@@ -16,7 +16,7 @@ jobs:
           node-version: 18
 
       - name: Install eas-cli
-        run: npm install -g eas-cli
+        run: npm install -g eas-cli@latest
 
       - name: Install dependencies
         working-directory: mobile
