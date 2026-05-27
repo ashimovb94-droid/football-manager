@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { CHAMPIONSHIP_CLUBS, EPL_CLUBS } from '../data/clubs';
+import { setManagerData } from './HomeScreen';
 
 const MANAGER_RATING = 50;
 
@@ -20,7 +21,7 @@ export default function ClubSelectScreen({ navigation, route }) {
   };
 
   const handleSign = () => {
-    navigation.replace('Home', { managerName, club: selected });
+    setManagerData(selected, managerName); setManagerData(selected, managerName); navigation.replace('Main');
     setSelected(null);
   };
 
