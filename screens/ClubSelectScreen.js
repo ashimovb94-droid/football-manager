@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { CHAMPIONSHIP_CLUBS, EPL_CLUBS } from '../data/clubs';
 import { setManagerData } from './HomeScreen';
+import ClubBadge from '../components/ClubBadge';
 
 const MANAGER_RATING = 50;
 
@@ -21,7 +22,8 @@ export default function ClubSelectScreen({ navigation, route }) {
   };
 
   const handleSign = () => {
-    setManagerData(selected, managerName); setManagerData(selected, managerName); navigation.replace('Main');
+    setManagerData(selected, managerName);
+    navigation.replace('Main');
     setSelected(null);
   };
 
@@ -32,7 +34,6 @@ export default function ClubSelectScreen({ navigation, route }) {
         <Text style={s.sub}>СЕЗОН 2025/26 · РЕЙТИНГ: {MANAGER_RATING}</Text>
       </View>
 
-      {/* Вкладки */}
       <View style={s.tabs}>
         <TouchableOpacity style={[s.tab, tab === 'championship' && s.tabActive]} onPress={() => setTab('championship')}>
           <Text style={[s.tabText, tab === 'championship' && s.tabTextActive]}>ЧЕМПИОНШИП</Text>
@@ -42,7 +43,6 @@ export default function ClubSelectScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {/* Список */}
       <FlatList
         data={clubs}
         keyExtractor={i => i.id}
@@ -50,7 +50,7 @@ export default function ClubSelectScreen({ navigation, route }) {
           const locked = tab === 'epl' && MANAGER_RATING < item.minRating;
           return (
             <TouchableOpacity style={[s.card, locked && s.cardLocked]} onPress={() => handlePress(item)}>
-              <Text style={[s.badge, locked && s.dimmed]}>{item.badge}</Text>
+              <ClubBadge club={item} size={52} />
               <View style={s.info}>
                 <Text style={[s.name, locked && s.dimmed]}>{item.name}</Text>
                 <Text style={[s.city, locked && s.dimmed]}>{item.city}</Text>
@@ -59,17 +59,13 @@ export default function ClubSelectScreen({ navigation, route }) {
                   <Text style={[s.stat, locked && s.dimmed]}>⭐ {item.rating}</Text>
                 </View>
               </View>
-              {locked
-                ? <Text style={s.lock}>🔒</Text>
-                : <Text style={s.arrow}>›</Text>
-              }
+              {locked ? <Text style={s.lock}>🔒</Text> : <Text style={s.arrow}>›</Text>}
             </TouchableOpacity>
           );
         }}
         contentContainerStyle={s.list}
       />
 
-      {/* Кастомное окно */}
       <Modal visible={!!selected} transparent animationType="slide">
         <View style={s.overlay}>
           <View style={s.modal}>
@@ -77,18 +73,21 @@ export default function ClubSelectScreen({ navigation, route }) {
               <>
                 <Text style={s.modalLockIcon}>🔒</Text>
                 <Text style={s.modalTitle}>НЕДОСТУПНО</Text>
-                <Text style={s.modalSub}>Для {selected?.name} нужен рейтинг менеджера {selected?.minRating}+</Text>
-                <Text style={s.modalSub}>Ваш рейтинг: {MANAGER_RATING}</Text>
-                <Text style={s.modalHint}>Начните с Чемпионшипа и докажите свой уровень</Text>
+                <Text style={s.modalSub}>Для {selected?.name} нужен рейтинг {selected?.minRating}+</Text>
+                <Text style={s.modalHint}>Ваш рейтинг: {MANAGER_RATING}</Text>
                 <TouchableOpacity style={s.btnClose} onPress={() => setSelected(null)}>
                   <Text style={s.btnCloseText}>ПОНЯТНО</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <>
-                <Text style={s.modalBadge}>{selected?.badge}</Text>
-                <Text style={s.modalTitle}>{selected?.name}</Text>
-                <Text style={s.modalCity}>{selected?.city}</Text>
+                <View style={s.modalTop}>
+                  <ClubBadge club={selected} size={80} />
+                  <View style={s.modalTopInfo}>
+                    <Text style={s.modalTitle}>{selected?.name}</Text>
+                    <Text style={s.modalCity}>{selected?.city}</Text>
+                  </View>
+                </View>
 
                 <View style={s.modalStats}>
                   <View style={s.modalStat}>
@@ -135,9 +134,8 @@ const s = StyleSheet.create({
   tabText:        { fontSize: 12, fontWeight: '800', color: '#8888aa', letterSpacing: 2 },
   tabTextActive:  { color: '#000' },
   list:           { padding: 16, gap: 10 },
-  card:           { backgroundColor: '#12121a', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ffffff15' },
+  card:           { backgroundColor: '#12121a', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: '#ffffff15' },
   cardLocked:     { opacity: 0.45 },
-  badge:          { fontSize: 36, marginRight: 16 },
   info:           { flex: 1 },
   name:           { fontSize: 16, fontWeight: '800', color: '#fff' },
   city:           { fontSize: 12, color: '#8888aa', marginBottom: 6 },
@@ -148,9 +146,10 @@ const s = StyleSheet.create({
   dimmed:         { color: '#555' },
   overlay:        { flex: 1, backgroundColor: '#000000aa', justifyContent: 'flex-end' },
   modal:          { backgroundColor: '#12121a', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 28, borderWidth: 1, borderColor: '#ffffff15' },
-  modalBadge:     { fontSize: 52, textAlign: 'center', marginBottom: 8 },
-  modalTitle:     { fontSize: 22, fontWeight: '900', color: '#fff', textAlign: 'center', letterSpacing: 2 },
-  modalCity:      { fontSize: 12, color: '#8888aa', textAlign: 'center', marginBottom: 20, letterSpacing: 2 },
+  modalTop:       { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+  modalTopInfo:   { flex: 1 },
+  modalTitle:     { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: 1 },
+  modalCity:      { fontSize: 12, color: '#8888aa', marginTop: 4, letterSpacing: 2 },
   modalStats:     { flexDirection: 'row', gap: 12, marginBottom: 20 },
   modalStat:      { flex: 1, backgroundColor: '#0a0a0f', borderRadius: 12, padding: 14, alignItems: 'center' },
   modalStatVal:   { fontSize: 20, fontWeight: '900', color: '#00d4ff' },
