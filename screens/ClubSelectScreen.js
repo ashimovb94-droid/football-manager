@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { CHAMPIONSHIP_CLUBS, EPL_CLUBS } from '../data/clubs';
-import { setManagerData } from './HomeScreen';
+import { saveManagerData } from '../utils/storage';
 import ClubBadge from '../components/ClubBadge';
 
 const MANAGER_RATING = 50;
@@ -21,8 +21,8 @@ export default function ClubSelectScreen({ navigation, route }) {
     }
   };
 
-  const handleSign = () => {
-    setManagerData(selected, managerName);
+  const handleSign = async () => {
+    await saveManagerData(selected, managerName);
     navigation.replace('Main');
     setSelected(null);
   };
@@ -88,7 +88,6 @@ export default function ClubSelectScreen({ navigation, route }) {
                     <Text style={s.modalCity}>{selected?.city}</Text>
                   </View>
                 </View>
-
                 <View style={s.modalStats}>
                   <View style={s.modalStat}>
                     <Text style={s.modalStatVal}>£{selected?.budget}M</Text>
@@ -99,13 +98,11 @@ export default function ClubSelectScreen({ navigation, route }) {
                     <Text style={s.modalStatLabel}>РЕЙТИНГ</Text>
                   </View>
                 </View>
-
                 <View style={s.divider} />
                 <Text style={s.modalSection}>🎯 ЦЕЛИ СЕЗОНА</Text>
                 <Text style={s.modalText}>{selected?.goal}</Text>
                 <Text style={s.modalSection}>📋 ОЖИДАНИЯ</Text>
                 <Text style={s.modalText}>{selected?.expectations}</Text>
-
                 <View style={s.modalBtns}>
                   <TouchableOpacity style={s.btnDecline} onPress={() => setSelected(null)}>
                     <Text style={s.btnDeclineText}>ОТКАЗАТЬСЯ</Text>
