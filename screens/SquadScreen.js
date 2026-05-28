@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { loadManagerData } from '../utils/storage';
 import { api } from '../utils/api';
+import PlayerCard from '../components/PlayerCard';
 
 const POSITIONS = ['ALL', 'GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LW', 'RW', 'ST'];
 
@@ -16,6 +17,7 @@ export default function SquadScreen() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     loadManagerData().then(({ club }) => {
@@ -42,7 +44,7 @@ export default function SquadScreen() {
   };
 
   const renderPlayer = ({ item }) => (
-    <TouchableOpacity style={s.card}>
+    <TouchableOpacity style={s.card} onPress={() => setSelected(item)}>
       <View style={[s.posTag, { backgroundColor: POS_COLORS[item.position] || '#666' }]}>
         <Text style={s.posText}>{item.position}</Text>
       </View>
@@ -63,13 +65,11 @@ export default function SquadScreen() {
 
   return (
     <View style={s.screen}>
-      {/* Шапка фиксированная */}
       <View style={s.header}>
         <Text style={s.title}>СОСТАВ</Text>
         <Text style={s.sub}>{filtered.length} ИГРОКОВ</Text>
       </View>
 
-      {/* Фильтры фиксированные */}
       <View style={s.filtersWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
           {POSITIONS.map(item => (
@@ -84,7 +84,6 @@ export default function SquadScreen() {
         </ScrollView>
       </View>
 
-      {/* Список */}
       {loading ? (
         <View style={s.loader}>
           <ActivityIndicator size="large" color="#00d4ff" />
@@ -101,6 +100,12 @@ export default function SquadScreen() {
           contentContainerStyle={s.list}
         />
       )}
+
+      <PlayerCard
+        player={selected}
+        visible={!!selected}
+        onClose={() => setSelected(null)}
+      />
     </View>
   );
 }
