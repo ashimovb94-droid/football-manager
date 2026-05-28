@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Modal, FlatList } from 'react-native';
 import { FORMATIONS, STYLES, MENTALITIES, GROUP } from '../data/tactics';
+import FieldPlayerCard from '../components/FieldPlayerCard';
 import { buildAutoLineup } from '../utils/autoLineup';
 import { loadManagerData, loadSession } from '../utils/storage';
 import { api } from '../utils/api';
@@ -139,21 +140,18 @@ export default function TacticsScreen() {
       <View style={s.fieldPenaltyBottom} />
       {currentFormation.positions.map(pos => {
         const player = lineup[pos.id];
-        const color = POS_COLORS[pos.label] || '#666';
         return (
-          <TouchableOpacity
+          <View
             key={pos.id}
-            style={[s.playerDot, { left: (pos.x / 100) * FIELD_W - 24, top: (pos.y / 100) * FIELD_H - 28 }]}
-            onPress={() => handlePositionTap(pos.id)}
-            onLongPress={() => player && handleRemovePlayer(pos.id)}
+            style={{ position: 'absolute', left: (pos.x / 100) * FIELD_W - 22, top: (pos.y / 100) * FIELD_H - 30 }}
           >
-            <View style={[s.dotCircle, { backgroundColor: player ? color : '#1a1a2e', borderColor: player ? '#fff' : '#444' }]}>
-              <Text style={s.dotLabel}>{pos.label}</Text>
-            </View>
-            <Text style={s.dotName} numberOfLines={1}>
-              {player ? player.surname : '—'}
-            </Text>
-          </TouchableOpacity>
+            <FieldPlayerCard
+              pos={pos}
+              player={player}
+              onPress={() => handlePositionTap(pos.id)}
+              onLongPress={() => player && handleRemovePlayer(pos.id)}
+            />
+          </View>
         );
       })}
     </View>
