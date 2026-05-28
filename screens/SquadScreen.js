@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { loadManagerData } from '../utils/storage';
 import { api } from '../utils/api';
 
@@ -16,11 +16,9 @@ export default function SquadScreen() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
-  const [club, setClub] = useState(null);
 
   useEffect(() => {
     loadManagerData().then(({ club }) => {
-      setClub(club);
       if (club) loadPlayers(club.id);
     });
   }, []);
@@ -52,8 +50,8 @@ export default function SquadScreen() {
         <Text style={s.name}>{item.name} {item.surname}</Text>
         <View style={s.row}>
           <Text style={s.detail}>{item.nationality}</Text>
-          <Text style={s.detail}>· {item.age} лет</Text>
-          <Text style={s.detail}>· £{item.salary}k/нед</Text>
+          <Text style={s.detail}> · {item.age} лет</Text>
+          <Text style={s.detail}> · £{item.salary}k</Text>
         </View>
       </View>
       <View style={s.overall}>
@@ -65,28 +63,28 @@ export default function SquadScreen() {
 
   return (
     <View style={s.screen}>
+      {/* Шапка фиксированная */}
       <View style={s.header}>
         <Text style={s.title}>СОСТАВ</Text>
         <Text style={s.sub}>{filtered.length} ИГРОКОВ</Text>
       </View>
 
-      {/* Фильтр позиций */}
-      <FlatList
-        horizontal
-        data={POSITIONS}
-        keyExtractor={i => i}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.filters}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[s.filterBtn, filter === item && s.filterActive]}
-            onPress={() => setFilter(item)}
-          >
-            <Text style={[s.filterText, filter === item && s.filterTextActive]}>{item}</Text>
-          </TouchableOpacity>
-        )}
-      />
+      {/* Фильтры фиксированные */}
+      <View style={s.filtersWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
+          {POSITIONS.map(item => (
+            <TouchableOpacity
+              key={item}
+              style={[s.filterBtn, filter === item && s.filterActive]}
+              onPress={() => setFilter(item)}
+            >
+              <Text style={[s.filterText, filter === item && s.filterTextActive]}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
+      {/* Список */}
       {loading ? (
         <View style={s.loader}>
           <ActivityIndicator size="large" color="#00d4ff" />
@@ -108,26 +106,27 @@ export default function SquadScreen() {
 }
 
 const s = StyleSheet.create({
-  screen:          { flex: 1, backgroundColor: '#0a0a0f' },
-  header:          { paddingTop: 56, paddingHorizontal: 24, paddingBottom: 12 },
-  title:           { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: 3 },
-  sub:             { fontSize: 11, color: '#00d4ff', letterSpacing: 2, marginTop: 4 },
-  filters:         { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  filterBtn:       { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#12121a', borderWidth: 1, borderColor: '#ffffff15' },
-  filterActive:    { backgroundColor: '#00d4ff', borderColor: '#00d4ff' },
-  filterText:      { fontSize: 11, fontWeight: '800', color: '#8888aa', letterSpacing: 1 },
-  filterTextActive:{ color: '#000' },
-  loader:          { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty:           { color: '#8888aa', fontSize: 14 },
-  list:            { padding: 16, gap: 10 },
-  card:            { backgroundColor: '#12121a', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#ffffff15' },
-  posTag:          { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  posText:         { fontSize: 10, fontWeight: '900', color: '#fff', letterSpacing: 1 },
-  info:            { flex: 1 },
-  name:            { fontSize: 15, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  row:             { flexDirection: 'row', gap: 4 },
-  detail:          { fontSize: 11, color: '#8888aa' },
-  overall:         { alignItems: 'center' },
-  overallVal:      { fontSize: 22, fontWeight: '900', color: '#00d4ff' },
-  overallLabel:    { fontSize: 9, color: '#8888aa', letterSpacing: 1 },
+  screen:           { flex: 1, backgroundColor: '#0a0a0f' },
+  header:           { paddingTop: 56, paddingHorizontal: 24, paddingBottom: 8 },
+  title:            { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: 3 },
+  sub:              { fontSize: 11, color: '#00d4ff', letterSpacing: 2, marginTop: 4 },
+  filtersWrap:      { height: 48, borderBottomWidth: 1, borderBottomColor: '#ffffff10' },
+  filters:          { paddingHorizontal: 16, gap: 6, alignItems: 'center', height: 48 },
+  filterBtn:        { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: '#12121a', borderWidth: 1, borderColor: '#ffffff15' },
+  filterActive:     { backgroundColor: '#00d4ff', borderColor: '#00d4ff' },
+  filterText:       { fontSize: 11, fontWeight: '800', color: '#8888aa', letterSpacing: 1 },
+  filterTextActive: { color: '#000' },
+  loader:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  empty:            { color: '#8888aa', fontSize: 14 },
+  list:             { padding: 16, gap: 8 },
+  card:             { backgroundColor: '#12121a', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#ffffff15' },
+  posTag:           { width: 40, height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  posText:          { fontSize: 9, fontWeight: '900', color: '#fff', letterSpacing: 1 },
+  info:             { flex: 1 },
+  name:             { fontSize: 14, fontWeight: '800', color: '#fff', marginBottom: 3 },
+  row:              { flexDirection: 'row' },
+  detail:           { fontSize: 11, color: '#8888aa' },
+  overall:          { alignItems: 'center' },
+  overallVal:       { fontSize: 20, fontWeight: '900', color: '#00d4ff' },
+  overallLabel:     { fontSize: 9, color: '#8888aa', letterSpacing: 1 },
 });
