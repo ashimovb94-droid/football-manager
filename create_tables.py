@@ -5,3 +5,6 @@ from app.models.user import User
 
 Base.metadata.create_all(bind=engine)
 print("Tables created!")
+from app.models.tactics import Tactics
+Base.metadata.create_all(bind=engine)
+print("Tactics table created!")
