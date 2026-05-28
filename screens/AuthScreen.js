@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { api } from '../utils/api';
 import { saveSession, saveManagerData } from '../utils/storage';
 
@@ -21,22 +21,17 @@ export default function AuthScreen({ navigation }) {
       } else {
         res = await api.login(email, password);
       }
-      
       if (res.detail) { setError(res.detail); return; }
-      
-      // Показываем что пришло с сервера
-      Alert.alert('Debug', `token: ${res.token ? 'есть' : 'нет'}, club_id: ${res.club_id}`);
-      
-      if (res.token) await saveSession(res.token, res);
+      await saveSession(res.token, res);
       await saveManagerData(null, res.manager_name);
-      
-      if (res.club_id) {
+      if (res.club_id && res.club) {
+        await saveManagerData(res.club, res.manager_name);
         navigation.replace('Main');
       } else {
-        navigation.replace('ClubSelect', { managerName: res.manager_name, token: res.token });
+        navigation.replace('ClubSelect', { managerName: res.manager_name });
       }
     } catch (e) {
-      setError('Ошибка: ' + e.message);
+      setError('Ошибка подключения к серверу');
     } finally {
       setLoading(false);
     }
@@ -49,9 +44,7 @@ export default function AuthScreen({ navigation }) {
         <Text style={s.title}>
           {mode === 'login' ? 'ВОЙТИ' : mode === 'register' ? 'РЕГИСТРАЦИЯ' : 'СБРОС ПАРОЛЯ'}
         </Text>
-
         {error ? <Text style={s.error}>{error}</Text> : null}
-
         {mode === 'register' && (
           <View style={s.field}>
             <Text style={s.label}>ИМЯ МЕНЕДЖЕРА</Text>
@@ -59,14 +52,12 @@ export default function AuthScreen({ navigation }) {
               placeholder="Твоё имя" placeholderTextColor="#8888aa" />
           </View>
         )}
-
         <View style={s.field}>
           <Text style={s.label}>EMAIL</Text>
           <TextInput style={s.input} value={email} onChangeText={setEmail}
             placeholder="email@example.com" placeholderTextColor="#8888aa"
             keyboardType="email-address" autoCapitalize="none" />
         </View>
-
         {mode !== 'forgot' && (
           <View style={s.field}>
             <Text style={s.label}>ПАРОЛЬ</Text>
@@ -74,7 +65,6 @@ export default function AuthScreen({ navigation }) {
               placeholder="••••••••" placeholderTextColor="#8888aa" secureTextEntry />
           </View>
         )}
-
         <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleSubmit} disabled={loading}>
           {loading
             ? <ActivityIndicator color="#000" />
@@ -83,13 +73,11 @@ export default function AuthScreen({ navigation }) {
               </Text>
           }
         </TouchableOpacity>
-
         {mode === 'login' && (
           <TouchableOpacity onPress={() => setMode('forgot')} style={s.link}>
             <Text style={s.linkText}>Забыли пароль?</Text>
           </TouchableOpacity>
         )}
-
         <View style={s.switchRow}>
           <Text style={s.switchText}>{mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}</Text>
           <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'register' : 'login')}>

@@ -10,6 +10,7 @@ import HomeScreen from './screens/HomeScreen';
 import SquadScreen from './screens/SquadScreen';
 import SeasonScreen from './screens/SeasonScreen';
 import TransferScreen from './screens/TransferScreen';
+import TacticsScreen from './screens/TacticsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -34,20 +35,25 @@ function MainTabs() {
           const icons = {
             Club:      focused ? 'home'            : 'home-outline',
             Squad:     focused ? 'people'          : 'people-outline',
+            Tactics:   focused ? 'analytics'       : 'analytics-outline',
             Season:    focused ? 'calendar'        : 'calendar-outline',
             Transfers: focused ? 'swap-horizontal' : 'swap-horizontal-outline',
           };
           return <Ionicons name={icons[route.name]} size={24} color={color} />;
         },
         tabBarLabel: ({ color }) => {
-          const labels = { Club: 'КЛУБ', Squad: 'СОСТАВ', Season: 'СЕЗОН', Transfers: 'ТРАНСФЕРЫ' };
           const { Text } = require('react-native');
+          const labels = {
+            Club: 'КЛУБ', Squad: 'СОСТАВ',
+            Tactics: 'ТАКТИКА', Season: 'СЕЗОН', Transfers: 'ТРАНСФЕРЫ'
+          };
           return <Text style={{ color, fontSize: 9, fontWeight: '800', letterSpacing: 1 }}>{labels[route.name]}</Text>;
         },
       })}
     >
       <Tab.Screen name="Club"      component={HomeScreen} />
       <Tab.Screen name="Squad"     component={SquadScreen} />
+      <Tab.Screen name="Tactics"   component={TacticsScreen} />
       <Tab.Screen name="Season"    component={SeasonScreen} />
       <Tab.Screen name="Transfers" component={TransferScreen} />
     </Tab.Navigator>
