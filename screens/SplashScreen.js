@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { loadSession } from '../utils/storage';
+import { loadSession, saveManagerData } from '../utils/storage';
 import { api } from '../utils/api';
 
 export default function SplashScreen({ navigation }) {
@@ -11,7 +11,7 @@ export default function SplashScreen({ navigation }) {
     Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
       Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start(() => checkSession());
+    ]).start(() => setTimeout(checkSession, 500));
   }, []);
 
   const checkSession = async () => {
@@ -20,7 +20,8 @@ export default function SplashScreen({ navigation }) {
       if (token) {
         const user = await api.getMe(token);
         if (user && !user.detail) {
-          if (user.club_id) {
+          if (user.club_id && user.club) {
+            await saveManagerData(user.club, user.manager_name);
             navigation.replace('Main');
           } else {
             navigation.replace('ClubSelect', { managerName: user.manager_name, token });

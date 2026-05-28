@@ -1,21 +1,19 @@
 import { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { api } from '../utils/api';
-import { saveManagerData } from '../utils/storage';
+import { saveManagerData, loadSession } from '../utils/storage';
 import ClubBadge from '../components/ClubBadge';
 
 const MANAGER_RATING = 50;
 
 export default function ClubSelectScreen({ navigation, route }) {
-  const { managerName, userId } = route.params;
+  const { managerName } = route.params;
   const [tab, setTab] = useState('championship');
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
-  useEffect(() => {
-    loadClubs();
-  }, [tab]);
+  useEffect(() => { loadClubs(); }, [tab]);
 
   const loadClubs = async () => {
     setLoading(true);
@@ -38,8 +36,16 @@ export default function ClubSelectScreen({ navigation, route }) {
   };
 
   const handleSign = async () => {
-    await saveManagerData(selected, managerName);
-    navigation.replace('Main');
+    console.log('Signing club:', selected?.id, typeof selected?.id);
+    try {
+      const { token } = await loadSession();
+      if (token) await api.selectClub(token, selected.id);
+      await saveManagerData(selected, managerName);
+      navigation.replace('Main');
+    } catch (e) {
+      await saveManagerData(selected, managerName);
+      navigation.replace('Main');
+    }
     setSelected(null);
   };
 
@@ -59,34 +65,28 @@ export default function ClubSelectScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <View style={s.loader}>
-          <ActivityIndicator size="large" color="#00d4ff" />
-        </View>
-      ) : (
-        <FlatList
-          data={clubs}
-          keyExtractor={i => String(i.id)}
-          renderItem={({ item }) => {
-            const locked = tab === 'epl' && MANAGER_RATING < item.min_rating;
-            return (
-              <TouchableOpacity style={[s.card, locked && s.cardLocked]} onPress={() => handlePress(item)}>
-                <ClubBadge club={{...item, id: String(item.id)}} size={52} />
-                <View style={s.info}>
-                  <Text style={[s.name, locked && s.dimmed]}>{item.name}</Text>
-                  <Text style={[s.city, locked && s.dimmed]}>{item.city}</Text>
-                  <View style={s.row}>
-                    <Text style={[s.stat, locked && s.dimmed]}>💰 £{item.budget}M</Text>
-                    <Text style={[s.stat, locked && s.dimmed]}>⭐ {item.rating}</Text>
-                  </View>
+      <FlatList
+        data={clubs}
+        keyExtractor={i => String(i.id)}
+        renderItem={({ item }) => {
+          const locked = tab === 'epl' && MANAGER_RATING < item.min_rating;
+          return (
+            <TouchableOpacity style={[s.card, locked && s.cardLocked]} onPress={() => handlePress(item)}>
+              <ClubBadge club={{...item, id: String(item.id)}} size={52} />
+              <View style={s.info}>
+                <Text style={[s.name, locked && s.dimmed]}>{item.name}</Text>
+                <Text style={[s.city, locked && s.dimmed]}>{item.city}</Text>
+                <View style={s.row}>
+                  <Text style={[s.stat, locked && s.dimmed]}>💰 £{item.budget}M</Text>
+                  <Text style={[s.stat, locked && s.dimmed]}>⭐ {item.rating}</Text>
                 </View>
-                {locked ? <Text style={s.lock}>🔒</Text> : <Text style={s.arrow}>›</Text>}
-              </TouchableOpacity>
-            );
-          }}
-          contentContainerStyle={s.list}
-        />
-      )}
+              </View>
+              {locked ? <Text style={s.lock}>🔒</Text> : <Text style={s.arrow}>›</Text>}
+            </TouchableOpacity>
+          );
+        }}
+        contentContainerStyle={s.list}
+      />
 
       <Modal visible={!!selected} transparent animationType="slide">
         <View style={s.overlay}>
@@ -152,7 +152,6 @@ const s = StyleSheet.create({
   tabActive:      { backgroundColor: '#00d4ff' },
   tabText:        { fontSize: 12, fontWeight: '800', color: '#8888aa', letterSpacing: 2 },
   tabTextActive:  { color: '#000' },
-  loader:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:           { padding: 16, gap: 10 },
   card:           { backgroundColor: '#12121a', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: '#ffffff15' },
   cardLocked:     { opacity: 0.45 },

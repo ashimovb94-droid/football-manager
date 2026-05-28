@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { api } from '../utils/api';
 import { saveSession, saveManagerData } from '../utils/storage';
 
@@ -21,16 +21,22 @@ export default function AuthScreen({ navigation }) {
       } else {
         res = await api.login(email, password);
       }
+      
       if (res.detail) { setError(res.detail); return; }
-      await saveSession(res.token, res);
+      
+      // Показываем что пришло с сервера
+      Alert.alert('Debug', `token: ${res.token ? 'есть' : 'нет'}, club_id: ${res.club_id}`);
+      
+      if (res.token) await saveSession(res.token, res);
       await saveManagerData(null, res.manager_name);
+      
       if (res.club_id) {
         navigation.replace('Main');
       } else {
         navigation.replace('ClubSelect', { managerName: res.manager_name, token: res.token });
       }
     } catch (e) {
-      setError('Ошибка подключения к серверу');
+      setError('Ошибка: ' + e.message);
     } finally {
       setLoading(false);
     }
