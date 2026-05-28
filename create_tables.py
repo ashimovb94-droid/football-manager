@@ -8,3 +8,6 @@ print("Tables created!")
 from app.models.tactics import Tactics
 Base.metadata.create_all(bind=engine)
 print("Tactics table created!")
+from app.models.season import Season, Match, Standing, EuroGroup, EuroMatch
+Base.metadata.create_all(bind=engine)
+print("Season tables created!")
