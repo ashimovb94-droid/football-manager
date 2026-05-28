@@ -8,7 +8,6 @@ export const api = {
     });
     return res.json();
   },
-
   login: async (email, password) => {
     const res = await fetch(`${BASE_URL}/users/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -16,7 +15,6 @@ export const api = {
     });
     return res.json();
   },
-
   getMe: async (token) => {
     const res = await fetch(`${BASE_URL}/users/me`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -24,7 +22,6 @@ export const api = {
     });
     return res.json();
   },
-
   selectClub: async (token, clubId) => {
     const res = await fetch(`${BASE_URL}/users/select-club?club_id=${clubId}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -32,18 +29,15 @@ export const api = {
     });
     return res.json();
   },
-
   getClubs: async (league) => {
     const url = league ? `${BASE_URL}/clubs/?league=${league}` : `${BASE_URL}/clubs/`;
     const res = await fetch(url);
     return res.json();
   },
-
   getPlayers: async (clubId) => {
     const res = await fetch(`${BASE_URL}/players/?club_id=${Number(clubId)}`);
     return res.json();
   },
-
   saveTactics: async (token, data) => {
     const res = await fetch(`${BASE_URL}/tactics/save`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -51,12 +45,23 @@ export const api = {
     });
     return res.json();
   },
-
   loadTactics: async (token) => {
     const res = await fetch(`${BASE_URL}/tactics/load`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
+    return res.json();
+  },
+  getStandings: async (league) => {
+    const res = await fetch(`${BASE_URL}/season/standings/${league}`);
+    return res.json();
+  },
+  getMatches: async (league, round) => {
+    const res = await fetch(`${BASE_URL}/season/matches/${league}/${round}`);
+    return res.json();
+  },
+  getCurrentRound: async (league) => {
+    const res = await fetch(`${BASE_URL}/season/current-round/${league}`);
     return res.json();
   },
 };
