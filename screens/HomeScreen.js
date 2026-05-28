@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { loadManagerData } from '../utils/storage';
+import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
 
 export default function HomeScreen() {
   const [club, setClub] = useState(null);
   const [managerName, setManagerName] = useState(null);
+  const [playerCount, setPlayerCount] = useState(0);
 
   useEffect(() => {
     loadManagerData().then(({ club, managerName }) => {
       setClub(club);
       setManagerName(managerName);
+      if (club) {
+        api.getPlayers(club.id).then(p => setPlayerCount(p.length));
+      }
     });
   }, []);
 
@@ -43,7 +48,7 @@ export default function HomeScreen() {
           {[
             { label: 'БЮДЖЕТ',  value: `£${club?.budget || 0}M`, color: '#00d4ff' },
             { label: 'РЕЙТИНГ', value: club?.rating || 50,        color: '#ffd700' },
-            { label: 'ИГРОКОВ', value: 23,                         color: '#00ff88' },
+            { label: 'ИГРОКОВ', value: playerCount,                color: '#00ff88' },
             { label: 'МАТЧЕЙ',  value: 0,                          color: '#ff6b35' },
             { label: 'ОЧКОВ',   value: 0,                          color: '#7b2fff' },
           ].map(item => (

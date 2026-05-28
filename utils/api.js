@@ -3,8 +3,7 @@ const BASE_URL = 'http://78.24.220.105:8000';
 export const api = {
   register: async (email, password, managerName) => {
     const res = await fetch(`${BASE_URL}/users/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, manager_name: managerName }),
     });
     return res.json();
@@ -12,8 +11,7 @@ export const api = {
 
   login: async (email, password) => {
     const res = await fetch(`${BASE_URL}/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     return res.json();
@@ -21,8 +19,7 @@ export const api = {
 
   getMe: async (token) => {
     const res = await fetch(`${BASE_URL}/users/me`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
     return res.json();
@@ -30,8 +27,7 @@ export const api = {
 
   selectClub: async (token, clubId) => {
     const res = await fetch(`${BASE_URL}/users/select-club?club_id=${clubId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
     return res.json();
@@ -45,6 +41,22 @@ export const api = {
 
   getPlayers: async (clubId) => {
     const res = await fetch(`${BASE_URL}/players/?club_id=${Number(clubId)}`);
+    return res.json();
+  },
+
+  saveTactics: async (token, data) => {
+    const res = await fetch(`${BASE_URL}/tactics/save`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, ...data }),
+    });
+    return res.json();
+  },
+
+  loadTactics: async (token) => {
+    const res = await fetch(`${BASE_URL}/tactics/load`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
     return res.json();
   },
 };
