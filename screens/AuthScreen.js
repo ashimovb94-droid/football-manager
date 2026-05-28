@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { api } from '../utils/api';
-import { saveManagerData } from '../utils/storage';
+import { saveSession, saveManagerData } from '../utils/storage';
 
 export default function AuthScreen({ navigation }) {
   const [mode, setMode] = useState('login');
@@ -15,22 +15,19 @@ export default function AuthScreen({ navigation }) {
     setError('');
     setLoading(true);
     try {
+      let res;
       if (mode === 'register') {
-        const res = await api.register(email, password, name);
-        if (res.detail) { setError(res.detail); return; }
-        await saveManagerData(null, res.manager_name);
-        navigation.replace('ClubSelect', { managerName: res.manager_name, userId: res.id });
-      } else if (mode === 'login') {
-        const res = await api.login(email, password);
-        if (res.detail) { setError(res.detail); return; }
-        await saveManagerData(null, res.manager_name);
-        if (res.club_id) {
-          navigation.replace('Main');
-        } else {
-          navigation.replace('ClubSelect', { managerName: res.manager_name, userId: res.id });
-        }
+        res = await api.register(email, password, name);
       } else {
-        setError('Функция в разработке');
+        res = await api.login(email, password);
+      }
+      if (res.detail) { setError(res.detail); return; }
+      await saveSession(res.token, res);
+      await saveManagerData(null, res.manager_name);
+      if (res.club_id) {
+        navigation.replace('Main');
+      } else {
+        navigation.replace('ClubSelect', { managerName: res.manager_name, token: res.token });
       }
     } catch (e) {
       setError('Ошибка подключения к серверу');
@@ -76,7 +73,7 @@ export default function AuthScreen({ navigation }) {
           {loading
             ? <ActivityIndicator color="#000" />
             : <Text style={s.btnText}>
-                {mode === 'login' ? 'ВОЙТИ' : mode === 'register' ? 'СОЗДАТЬ АККАУНТ' : 'ОТПРАВИТЬ ССЫЛКУ'}
+                {mode === 'login' ? 'ВОЙТИ' : mode === 'register' ? 'СОЗДАТЬ АККАУНТ' : 'ОТПРАВИТЬ'}
               </Text>
           }
         </TouchableOpacity>
@@ -88,13 +85,9 @@ export default function AuthScreen({ navigation }) {
         )}
 
         <View style={s.switchRow}>
-          <Text style={s.switchText}>
-            {mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
-          </Text>
+          <Text style={s.switchText}>{mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}</Text>
           <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'register' : 'login')}>
-            <Text style={s.switchBtn}>
-              {mode === 'login' ? ' Зарегистрироваться' : ' Войти'}
-            </Text>
+            <Text style={s.switchBtn}>{mode === 'login' ? ' Зарегистрироваться' : ' Войти'}</Text>
           </TouchableOpacity>
         </View>
       </View>

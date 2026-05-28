@@ -1,20 +1,36 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { loadSession } from '../utils/storage';
+import { api } from '../utils/api';
 
 export default function SplashScreen({ navigation }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
-      ]),
-      Animated.delay(1500),
-      Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
-    ]).start(() => navigation.replace('Auth'));
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
+    ]).start(() => checkSession());
   }, []);
+
+  const checkSession = async () => {
+    try {
+      const { token } = await loadSession();
+      if (token) {
+        const user = await api.getMe(token);
+        if (user && !user.detail) {
+          if (user.club_id) {
+            navigation.replace('Main');
+          } else {
+            navigation.replace('ClubSelect', { managerName: user.manager_name, token });
+          }
+          return;
+        }
+      }
+    } catch (e) {}
+    navigation.replace('Auth');
+  };
 
   return (
     <View style={s.screen}>

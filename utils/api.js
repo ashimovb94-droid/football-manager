@@ -1,7 +1,6 @@
 const BASE_URL = 'http://78.24.220.105:8000';
 
 export const api = {
-  // Auth
   register: async (email, password, managerName) => {
     const res = await fetch(`${BASE_URL}/users/register`, {
       method: 'POST',
@@ -20,17 +19,32 @@ export const api = {
     return res.json();
   },
 
-  // Clubs
+  getMe: async (token) => {
+    const res = await fetch(`${BASE_URL}/users/me`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
+
+  selectClub: async (token, clubId) => {
+    const res = await fetch(`${BASE_URL}/users/select-club?club_id=${clubId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
+
   getClubs: async (league) => {
     const url = league ? `${BASE_URL}/clubs/?league=${league}` : `${BASE_URL}/clubs/`;
     const res = await fetch(url);
     return res.json();
   },
 
-  // Players
   getPlayers: async (clubId) => {
-    const url = clubId ? `${BASE_URL}/players/?club_id=${clubId}` : `${BASE_URL}/players/`;
-    const res = await fetch(url);
+    const res = await fetch(`${BASE_URL}/players/?club_id=${Number(clubId)}`);
     return res.json();
   },
 };
