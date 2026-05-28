@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { api } from '../utils/api';
 import { saveManagerData, loadSession } from '../utils/storage';
+import { buildAutoLineup } from '../utils/autoLineup';
 import ClubBadge from '../components/ClubBadge';
 
 const MANAGER_RATING = 50;
@@ -20,11 +21,8 @@ export default function ClubSelectScreen({ navigation, route }) {
     try {
       const data = await api.getClubs(tab);
       setClubs(data);
-    } catch (e) {
-      setClubs([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setClubs([]); }
+    finally { setLoading(false); }
   };
 
   const handlePress = (club) => {
@@ -36,11 +34,20 @@ export default function ClubSelectScreen({ navigation, route }) {
   };
 
   const handleSign = async () => {
-    console.log('Signing club:', selected?.id, typeof selected?.id);
     try {
       const { token } = await loadSession();
       if (token) await api.selectClub(token, selected.id);
       await saveManagerData(selected, managerName);
+      if (token) {
+        const players = await api.getPlayers(selected.id);
+        const lineup = buildAutoLineup(players, '4-3-3');
+        await api.saveTactics(token, {
+          formation: '4-3-3',
+          style: 'balanced',
+          mentality: 'balanced',
+          lineup,
+        });
+      }
       navigation.replace('Main');
     } catch (e) {
       await saveManagerData(selected, managerName);
@@ -55,7 +62,6 @@ export default function ClubSelectScreen({ navigation, route }) {
         <Text style={s.title}>ВЫБЕРИ КЛУБ</Text>
         <Text style={s.sub}>СЕЗОН 2025/26 · РЕЙТИНГ: {MANAGER_RATING}</Text>
       </View>
-
       <View style={s.tabs}>
         <TouchableOpacity style={[s.tab, tab === 'championship' && s.tabActive]} onPress={() => setTab('championship')}>
           <Text style={[s.tabText, tab === 'championship' && s.tabTextActive]}>ЧЕМПИОНШИП</Text>
@@ -64,7 +70,6 @@ export default function ClubSelectScreen({ navigation, route }) {
           <Text style={[s.tabText, tab === 'epl' && s.tabTextActive]}>АПЛ</Text>
         </TouchableOpacity>
       </View>
-
       <FlatList
         data={clubs}
         keyExtractor={i => String(i.id)}
@@ -87,7 +92,6 @@ export default function ClubSelectScreen({ navigation, route }) {
         }}
         contentContainerStyle={s.list}
       />
-
       <Modal visible={!!selected} transparent animationType="slide">
         <View style={s.overlay}>
           <View style={s.modal}>

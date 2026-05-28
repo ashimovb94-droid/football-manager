@@ -34,17 +34,17 @@ export const FORMATIONS = {
   '4-2-3-1': {
     name: '4-2-3-1',
     positions: [
-      { id: 'gk',  label: 'GK',  x: 50, y: 88 },
-      { id: 'rb',  label: 'RB',  x: 80, y: 70 },
-      { id: 'cb1', label: 'CB',  x: 62, y: 70 },
-      { id: 'cb2', label: 'CB',  x: 38, y: 70 },
-      { id: 'lb',  label: 'LB',  x: 20, y: 70 },
-      { id: 'cdm1','label': 'CDM', x: 60, y: 55 },
-      { id: 'cdm2','label': 'CDM', x: 40, y: 55 },
-      { id: 'ram', label: 'CAM', x: 75, y: 35 },
-      { id: 'cam', label: 'CAM', x: 50, y: 30 },
-      { id: 'lam', label: 'CAM', x: 25, y: 35 },
-      { id: 'st',  label: 'ST',  x: 50, y: 15 },
+      { id: 'gk',   label: 'GK',  x: 50, y: 88 },
+      { id: 'rb',   label: 'RB',  x: 80, y: 70 },
+      { id: 'cb1',  label: 'CB',  x: 62, y: 70 },
+      { id: 'cb2',  label: 'CB',  x: 38, y: 70 },
+      { id: 'lb',   label: 'LB',  x: 20, y: 70 },
+      { id: 'cdm1', label: 'CDM', x: 60, y: 55 },
+      { id: 'cdm2', label: 'CDM', x: 40, y: 55 },
+      { id: 'ram',  label: 'CAM', x: 75, y: 35 },
+      { id: 'cam',  label: 'CAM', x: 50, y: 30 },
+      { id: 'lam',  label: 'CAM', x: 25, y: 35 },
+      { id: 'st',   label: 'ST',  x: 50, y: 15 },
     ]
   },
   '3-5-2': {
@@ -112,3 +112,28 @@ export const MENTALITIES = [
   { id: 'defensive',    label: 'ОБОРОНА' },
   { id: 'very_defense', label: 'ОЧЕНЬ ОБОРОНА' },
 ];
+
+// Правильные приоритеты — строго по группам
+export const PRIORITY = {
+  GK:  ['GK'],
+  CB:  ['CB'],
+  LB:  ['LB', 'LWB', 'CB'],
+  RB:  ['RB', 'RWB', 'CB'],
+  LWB: ['LWB', 'LB', 'CB'],
+  RWB: ['RWB', 'RB', 'CB'],
+  CDM: ['CDM', 'CM'],
+  CM:  ['CM', 'CDM', 'CAM'],
+  CAM: ['CAM', 'CM', 'CDM'],
+  LM:  ['LM', 'CM', 'CDM'],
+  RM:  ['RM', 'CM', 'CDM'],
+  LW:  ['LW', 'LM'],
+  RW:  ['RW', 'RM'],
+  ST:  ['ST'],
+};
+
+export const GROUP = {
+  GK:  ['GK'],
+  DEF: ['CB', 'LB', 'RB', 'LWB', 'RWB'],
+  MID: ['CDM', 'CM', 'CAM', 'LM', 'RM'],
+  ATT: ['LW', 'RW', 'ST'],
+};
