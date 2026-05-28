@@ -1,17 +1,41 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { api } from '../utils/api';
+import { saveManagerData } from '../utils/storage';
 
 export default function AuthScreen({ navigation }) {
-  const [mode, setMode] = useState('login'); // login | register | forgot
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = () => {
-    if (mode === 'login' || mode === 'register') {
-      navigation.replace('ClubSelect', { managerName: name || email.split('@')[0] });
-    } else {
-      setMode('login');
+  const handleSubmit = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      if (mode === 'register') {
+        const res = await api.register(email, password, name);
+        if (res.detail) { setError(res.detail); return; }
+        await saveManagerData(null, res.manager_name);
+        navigation.replace('ClubSelect', { managerName: res.manager_name, userId: res.id });
+      } else if (mode === 'login') {
+        const res = await api.login(email, password);
+        if (res.detail) { setError(res.detail); return; }
+        await saveManagerData(null, res.manager_name);
+        if (res.club_id) {
+          navigation.replace('Main');
+        } else {
+          navigation.replace('ClubSelect', { managerName: res.manager_name, userId: res.id });
+        }
+      } else {
+        setError('Функция в разработке');
+      }
+    } catch (e) {
+      setError('Ошибка подключения к серверу');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -22,6 +46,8 @@ export default function AuthScreen({ navigation }) {
         <Text style={s.title}>
           {mode === 'login' ? 'ВОЙТИ' : mode === 'register' ? 'РЕГИСТРАЦИЯ' : 'СБРОС ПАРОЛЯ'}
         </Text>
+
+        {error ? <Text style={s.error}>{error}</Text> : null}
 
         {mode === 'register' && (
           <View style={s.field}>
@@ -46,10 +72,13 @@ export default function AuthScreen({ navigation }) {
           </View>
         )}
 
-        <TouchableOpacity style={s.btn} onPress={handleSubmit}>
-          <Text style={s.btnText}>
-            {mode === 'login' ? 'ВОЙТИ' : mode === 'register' ? 'СОЗДАТЬ АККАУНТ' : 'ОТПРАВИТЬ ССЫЛКУ'}
-          </Text>
+        <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleSubmit} disabled={loading}>
+          {loading
+            ? <ActivityIndicator color="#000" />
+            : <Text style={s.btnText}>
+                {mode === 'login' ? 'ВОЙТИ' : mode === 'register' ? 'СОЗДАТЬ АККАУНТ' : 'ОТПРАВИТЬ ССЫЛКУ'}
+              </Text>
+          }
         </TouchableOpacity>
 
         {mode === 'login' && (
@@ -74,18 +103,20 @@ export default function AuthScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  screen:     { flex: 1, backgroundColor: '#0a0a0f' },
-  inner:      { flex: 1, padding: 32, justifyContent: 'center' },
-  logo:       { fontSize: 52, textAlign: 'center', marginBottom: 8 },
-  title:      { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: 4, textAlign: 'center', marginBottom: 40 },
-  field:      { marginBottom: 20 },
-  label:      { fontSize: 11, color: '#8888aa', letterSpacing: 2, marginBottom: 8 },
-  input:      { backgroundColor: '#12121a', color: '#fff', borderRadius: 12, padding: 16, fontSize: 15, borderWidth: 1, borderColor: '#ffffff15' },
-  btn:        { backgroundColor: '#00d4ff', borderRadius: 14, padding: 18, alignItems: 'center', marginTop: 8 },
-  btnText:    { color: '#000', fontSize: 15, fontWeight: '900', letterSpacing: 3 },
-  link:       { alignItems: 'center', marginTop: 16 },
-  linkText:   { color: '#8888aa', fontSize: 13 },
-  switchRow:  { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-  switchText: { color: '#8888aa', fontSize: 13 },
-  switchBtn:  { color: '#00d4ff', fontSize: 13, fontWeight: '700' },
+  screen:      { flex: 1, backgroundColor: '#0a0a0f' },
+  inner:       { flex: 1, padding: 32, justifyContent: 'center' },
+  logo:        { fontSize: 52, textAlign: 'center', marginBottom: 8 },
+  title:       { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: 4, textAlign: 'center', marginBottom: 40 },
+  field:       { marginBottom: 20 },
+  label:       { fontSize: 11, color: '#8888aa', letterSpacing: 2, marginBottom: 8 },
+  input:       { backgroundColor: '#12121a', color: '#fff', borderRadius: 12, padding: 16, fontSize: 15, borderWidth: 1, borderColor: '#ffffff15' },
+  btn:         { backgroundColor: '#00d4ff', borderRadius: 14, padding: 18, alignItems: 'center', marginTop: 8 },
+  btnDisabled: { opacity: 0.6 },
+  btnText:     { color: '#000', fontSize: 15, fontWeight: '900', letterSpacing: 3 },
+  error:       { color: '#ff3355', textAlign: 'center', marginBottom: 16, fontSize: 13 },
+  link:        { alignItems: 'center', marginTop: 16 },
+  linkText:    { color: '#8888aa', fontSize: 13 },
+  switchRow:   { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
+  switchText:  { color: '#8888aa', fontSize: 13 },
+  switchBtn:   { color: '#00d4ff', fontSize: 13, fontWeight: '700' },
 });
