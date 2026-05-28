@@ -1,20 +1,36 @@
-import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal } from 'react-native';
-import { CHAMPIONSHIP_CLUBS, EPL_CLUBS } from '../data/clubs';
+import { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { api } from '../utils/api';
 import { saveManagerData } from '../utils/storage';
 import ClubBadge from '../components/ClubBadge';
 
 const MANAGER_RATING = 50;
 
 export default function ClubSelectScreen({ navigation, route }) {
-  const { managerName } = route.params;
+  const { managerName, userId } = route.params;
   const [tab, setTab] = useState('championship');
+  const [clubs, setClubs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
-  const clubs = tab === 'championship' ? CHAMPIONSHIP_CLUBS : EPL_CLUBS;
+  useEffect(() => {
+    loadClubs();
+  }, [tab]);
+
+  const loadClubs = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getClubs(tab);
+      setClubs(data);
+    } catch (e) {
+      setClubs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePress = (club) => {
-    if (tab === 'epl' && MANAGER_RATING < club.minRating) {
+    if (tab === 'epl' && MANAGER_RATING < club.min_rating) {
       setSelected({ ...club, locked: true });
     } else {
       setSelected({ ...club, locked: false });
@@ -43,28 +59,34 @@ export default function ClubSelectScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={clubs}
-        keyExtractor={i => i.id}
-        renderItem={({ item }) => {
-          const locked = tab === 'epl' && MANAGER_RATING < item.minRating;
-          return (
-            <TouchableOpacity style={[s.card, locked && s.cardLocked]} onPress={() => handlePress(item)}>
-              <ClubBadge club={item} size={52} />
-              <View style={s.info}>
-                <Text style={[s.name, locked && s.dimmed]}>{item.name}</Text>
-                <Text style={[s.city, locked && s.dimmed]}>{item.city}</Text>
-                <View style={s.row}>
-                  <Text style={[s.stat, locked && s.dimmed]}>💰 £{item.budget}M</Text>
-                  <Text style={[s.stat, locked && s.dimmed]}>⭐ {item.rating}</Text>
+      {loading ? (
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color="#00d4ff" />
+        </View>
+      ) : (
+        <FlatList
+          data={clubs}
+          keyExtractor={i => String(i.id)}
+          renderItem={({ item }) => {
+            const locked = tab === 'epl' && MANAGER_RATING < item.min_rating;
+            return (
+              <TouchableOpacity style={[s.card, locked && s.cardLocked]} onPress={() => handlePress(item)}>
+                <ClubBadge club={{...item, id: String(item.id)}} size={52} />
+                <View style={s.info}>
+                  <Text style={[s.name, locked && s.dimmed]}>{item.name}</Text>
+                  <Text style={[s.city, locked && s.dimmed]}>{item.city}</Text>
+                  <View style={s.row}>
+                    <Text style={[s.stat, locked && s.dimmed]}>💰 £{item.budget}M</Text>
+                    <Text style={[s.stat, locked && s.dimmed]}>⭐ {item.rating}</Text>
+                  </View>
                 </View>
-              </View>
-              {locked ? <Text style={s.lock}>🔒</Text> : <Text style={s.arrow}>›</Text>}
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={s.list}
-      />
+                {locked ? <Text style={s.lock}>🔒</Text> : <Text style={s.arrow}>›</Text>}
+              </TouchableOpacity>
+            );
+          }}
+          contentContainerStyle={s.list}
+        />
+      )}
 
       <Modal visible={!!selected} transparent animationType="slide">
         <View style={s.overlay}>
@@ -73,7 +95,7 @@ export default function ClubSelectScreen({ navigation, route }) {
               <>
                 <Text style={s.modalLockIcon}>🔒</Text>
                 <Text style={s.modalTitle}>НЕДОСТУПНО</Text>
-                <Text style={s.modalSub}>Для {selected?.name} нужен рейтинг {selected?.minRating}+</Text>
+                <Text style={s.modalSub}>Для {selected?.name} нужен рейтинг {selected?.min_rating}+</Text>
                 <Text style={s.modalHint}>Ваш рейтинг: {MANAGER_RATING}</Text>
                 <TouchableOpacity style={s.btnClose} onPress={() => setSelected(null)}>
                   <Text style={s.btnCloseText}>ПОНЯТНО</Text>
@@ -82,7 +104,7 @@ export default function ClubSelectScreen({ navigation, route }) {
             ) : (
               <>
                 <View style={s.modalTop}>
-                  <ClubBadge club={selected} size={80} />
+                  <ClubBadge club={{...selected, id: String(selected?.id)}} size={80} />
                   <View style={s.modalTopInfo}>
                     <Text style={s.modalTitle}>{selected?.name}</Text>
                     <Text style={s.modalCity}>{selected?.city}</Text>
@@ -130,6 +152,7 @@ const s = StyleSheet.create({
   tabActive:      { backgroundColor: '#00d4ff' },
   tabText:        { fontSize: 12, fontWeight: '800', color: '#8888aa', letterSpacing: 2 },
   tabTextActive:  { color: '#000' },
+  loader:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:           { padding: 16, gap: 10 },
   card:           { backgroundColor: '#12121a', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: '#ffffff15' },
   cardLocked:     { opacity: 0.45 },
