@@ -64,4 +64,26 @@ export const api = {
     const res = await fetch(`${BASE_URL}/season/current-round/${league}`);
     return res.json();
   },
+  getMarket: async (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.position) q.append('position', params.position);
+    if (params.min_ovr) q.append('min_ovr', params.min_ovr);
+    if (params.max_price) q.append('max_price', params.max_price);
+    const res = await fetch(`${BASE_URL}/transfers/market?${q}`);
+    return res.json();
+  },
+  buyPlayer: async (token, player_id) => {
+    const res = await fetch(`${BASE_URL}/transfers/buy`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, player_id, transfer_type: 'buy' }),
+    });
+    return res.json();
+  },
+  sellPlayer: async (token, player_id) => {
+    const res = await fetch(`${BASE_URL}/transfers/sell`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, player_id, transfer_type: 'sell' }),
+    });
+    return res.json();
+  },
 };

@@ -10,13 +10,24 @@ export default function HomeScreen() {
   const [playerCount, setPlayerCount] = useState(0);
 
   useEffect(() => {
-    loadManagerData().then(({ club, managerName }) => {
-      setClub(club);
+    const load = async () => {
+      const { token } = await import('../utils/storage').then(m => m.loadSession());
+      const { club, managerName } = await loadManagerData();
       setManagerName(managerName);
-      if (club) {
-        api.getPlayers(club.id).then(p => setPlayerCount(p.length));
+      if (club) api.getPlayers(club.id).then(p => setPlayerCount(p.length));
+      if (token) {
+        const user = await api.getMe(token);
+        if (user && user.club) {
+          setClub(user.club);
+          await import('../utils/storage').then(m => m.saveManagerData(user.club, managerName));
+        } else {
+          setClub(club);
+        }
+      } else {
+        setClub(club);
       }
-    });
+    };
+    load();
   }, []);
 
   const news = [
