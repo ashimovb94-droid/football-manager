@@ -1,17 +1,32 @@
 const BASE_URL = 'http://78.24.220.105:8000';
 
 export const api = {
-  register: async (email, password, managerName) => {
+  register: async (username, password, secretQuestion, secretAnswer) => {
     const res = await fetch(`${BASE_URL}/users/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, manager_name: managerName }),
+      body: JSON.stringify({ username, password, secret_question: secretQuestion, secret_answer: secretAnswer }),
     });
     return res.json();
   },
-  login: async (email, password) => {
+  getSecretQuestions: async () => {
+    const res = await fetch(`${BASE_URL}/users/questions`);
+    return res.json();
+  },
+  getResetQuestion: async (username) => {
+    const res = await fetch(`${BASE_URL}/users/reset-question/${username}`);
+    return res.json();
+  },
+  resetPassword: async (username, secretAnswer, newPassword) => {
+    const res = await fetch(`${BASE_URL}/users/reset-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, secret_answer: secretAnswer, new_password: newPassword }),
+    });
+    return res.json();
+  },
+  login: async (username, password) => {
     const res = await fetch(`${BASE_URL}/users/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     });
     return res.json();
   },

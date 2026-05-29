@@ -4,6 +4,7 @@ import { loadManagerData, loadSession } from '../utils/storage';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
+import LeagueBadge from '../components/LeagueBadge';
 
 const ZONE_COLORS = {
   championship: {
@@ -105,8 +106,11 @@ export default function SeasonScreen() {
   return (
     <View style={s.screen}>
       <View style={s.header}>
-        <Text style={s.title}>СЕЗОН</Text>
-        <Text style={s.sub}>{league === 'championship' ? 'ЧЕМПИОНШИП' : 'АПЛ'} · ТУР {round}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={s.title}>СЕЗОН</Text>
+          <LeagueBadge league={league} size={32} showName={true} />
+        </View>
+        <Text style={s.sub}>ТУР {round}</Text>
       </View>
 
       <View style={s.tabs}>

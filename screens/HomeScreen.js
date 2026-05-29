@@ -4,6 +4,7 @@ import { loadManagerData } from '../utils/storage';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
+import LeagueBadge from '../components/LeagueBadge';
 
 export default function HomeScreen() {
   const [club, setClub] = useState(null);
@@ -70,8 +71,8 @@ export default function HomeScreen() {
             </View>
           </View>
           <View style={s.seasonBadge}>
+            <LeagueBadge league={club?.league || 'championship'} size={20} />
             <Text style={s.seasonText}>СЕЗОН 1</Text>
-            <Text style={s.leagueText}>ЧЕМПИОНШИП</Text>
           </View>
         </View>
 
