@@ -16,7 +16,9 @@ def get_club_strength(club_id, db, lineup=None):
     return sum(p.overall for p in players) / len(players)
 
 def simulate_match(home_id, away_id, home_lineup=None, away_lineup=None,
-                   home_style='balanced', away_style='balanced', is_friendly=False):
+                   home_style='balanced', away_style='balanced',
+                   home_mentality='balanced', away_mentality='balanced',
+                   is_friendly=False, home_streak=0, away_streak=0):
     db = SessionLocal()
     home_str = get_club_strength(home_id, db, home_lineup)
     away_str = get_club_strength(away_id, db, away_lineup)
