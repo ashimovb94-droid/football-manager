@@ -31,6 +31,12 @@ export default function PreseasonScreen({ navigation }) {
     setToken(token);
     setClub(club);
     await refreshStatus();
+    if (token) {
+      try {
+        const saved = await api.getPreseasonResults(token);
+        if (saved) setResults(saved);
+      } catch (e) {}
+    }
     setLoading(false);
   };
 

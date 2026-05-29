@@ -93,6 +93,13 @@ export const api = {
     });
     return res.json();
   },
+  getPreseasonResults: async (token) => {
+    const res = await fetch(`${BASE_URL}/preseason/results`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
   getPreseasonStatus: async () => {
     const res = await fetch(`${BASE_URL}/preseason/status`);
     return res.json();
