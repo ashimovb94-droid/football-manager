@@ -91,6 +91,7 @@ export default function SeasonScreen() {
         <View style={[s.posIndicator, { backgroundColor: color || 'transparent' }]} />
         <Text style={[s.pos, isMe && s.textMe]}>{item.position}</Text>
         <View style={s.clubCell}>
+          <ClubBadge club={{ id: String(item.club_id), name: item.club_name, primary: '#333', secondary: '#fff' }} size={20} />
           <Text style={[s.clubName, isMe && s.textMe]} numberOfLines={1}>{item.club_name}</Text>
         </View>
         <Text style={[s.cell, isMe && s.textMe]}>{item.played}</Text>
@@ -228,7 +229,7 @@ const s = StyleSheet.create({
   row:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#ffffff08' },
   rowMe:         { backgroundColor: '#00d4ff15' },
   pos:           { width: 24, fontSize: 12, color: '#8888aa', textAlign: 'center', fontWeight: '700' },
-  clubCell:      { flex: 1, paddingHorizontal: 4 },
+  clubCell:      { flex: 1, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
   clubName:      { fontSize: 12, color: '#fff', fontWeight: '600' },
   cell:          { width: 24, fontSize: 11, color: '#8888aa', textAlign: 'center' },
   pts:           { width: 28, fontSize: 13, color: '#00d4ff', textAlign: 'center', fontWeight: '900' },
