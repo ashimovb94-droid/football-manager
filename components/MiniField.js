@@ -59,11 +59,11 @@ export default function MiniField({ formation = '4-3-3', lineup = {}, onPress })
 }
 
 const s = StyleSheet.create({
-  field:       { backgroundColor: '#0d4f1c', borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: '#ffffff15' },
-  midLine:     { position: 'absolute', width: '100%', height: 1, backgroundColor: '#ffffff20', top: '50%' },
-  circle:      { position: 'absolute', width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#ffffff20', top: '50%', left: '50%', marginTop: -25, marginLeft: -25 },
-  penTop:      { position: 'absolute', width: '45%', height: '18%', borderWidth: 1, borderColor: '#ffffff20', top: 0, left: '27.5%', borderTopWidth: 0 },
-  penBot:      { position: 'absolute', width: '45%', height: '18%', borderWidth: 1, borderColor: '#ffffff20', bottom: 0, left: '27.5%', borderBottomWidth: 0 },
+  field:       { backgroundColor: '#0d0a1f', borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: '#7b2fff20' },
+  midLine:     { position: 'absolute', width: '100%', height: 1, backgroundColor: '#7b2fff30', top: '50%' },
+  circle:      { position: 'absolute', width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#7b2fff30', top: '50%', left: '50%', marginTop: -25, marginLeft: -25 },
+  penTop:      { position: 'absolute', width: '45%', height: '18%', borderWidth: 1, borderColor: '#7b2fff30', top: 0, left: '27.5%', borderTopWidth: 0 },
+  penBot:      { position: 'absolute', width: '45%', height: '18%', borderWidth: 1, borderColor: '#7b2fff30', bottom: 0, left: '27.5%', borderBottomWidth: 0 },
   formationTag:{ position: 'absolute', top: 6, left: 8, backgroundColor: '#00000050', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
   formationText:{ fontSize: 10, fontWeight: '900', color: '#fff', letterSpacing: 1 },
   dot:         { position: 'absolute', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
