@@ -65,3 +65,12 @@ class PreseasonConfig(Base):
     start_date  = Column(String)   # ISO datetime когда стартовала предсезонка
     season_start= Column(String)   # ISO datetime когда стартует сезон
     status      = Column(String, default='active')  # active / finished
+
+class PreseasonResult(Base):
+    __tablename__ = "preseason_results"
+    id          = Column(Integer, primary_key=True)
+    user_id     = Column(Integer)
+    day         = Column(Integer)
+    match_num   = Column(Integer)
+    home_score  = Column(Integer)
+    away_score  = Column(Integer)
