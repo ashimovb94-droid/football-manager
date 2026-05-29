@@ -7,12 +7,13 @@ import ClubBadge from '../components/ClubBadge';
 import LeagueBadge from '../components/LeagueBadge';
 import MiniField from '../components/MiniField';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const NEWS = [
-  { id: 1, icon: '📰', title: 'Предсезонная подготовка', text: 'Команда готовится к новому сезону', detail: 'Тренерский штаб разработал программу предсезонной подготовки. Игроки проходят физические тесты, тактические занятия и товарищеские матчи для набора оптимальной формы перед стартом сезона.' },
-  { id: 2, icon: '💰', title: 'Трансферное окно открыто', text: 'Летнее окно открыто до 31 августа', detail: 'Летнее трансферное окно официально открыто. У вас есть возможность усилить состав новыми игроками или продать тех кто не вписывается в тактические планы. Следите за бюджетом!' },
-  { id: 3, icon: '📋', title: 'Первый матч сезона', text: 'Скоро стартует Чемпионшип', detail: 'Чемпионшип стартует 9 августа. Ваша команда готова к борьбе за повышение в АПЛ. Убедитесь что состав и тактика подготовлены к первому туру.' },
-  { id: 4, icon: '🏋️', title: 'Тренировочный лагерь', text: 'Команда проходит предсезонные сборы', detail: 'Клуб организовал предсезонные сборы. Игроки работают над физической подготовкой и командным взаимодействием. Регулярные тренировки повысят общий рейтинг команды.' },
+  { id: 1, icon: 'newspaper-outline', title: 'Предсезонная подготовка', text: 'Команда готовится к новому сезону', detail: 'Тренерский штаб разработал программу предсезонной подготовки. Игроки проходят физические тесты, тактические занятия и товарищеские матчи для набора оптимальной формы перед стартом сезона.' },
+  { id: 2, icon: 'cash-outline', title: 'Трансферное окно открыто', text: 'Летнее окно открыто до 31 августа', detail: 'Летнее трансферное окно официально открыто. У вас есть возможность усилить состав новыми игроками или продать тех кто не вписывается в тактические планы. Следите за бюджетом!' },
+  { id: 3, icon: 'calendar-outline', title: 'Первый матч сезона', text: 'Скоро стартует Чемпионшип', detail: 'Чемпионшип стартует 9 августа. Ваша команда готова к борьбе за повышение в АПЛ. Убедитесь что состав и тактика подготовлены к первому туру.' },
+  { id: 4, icon: 'barbell-outline', title: 'Тренировочный лагерь', text: 'Команда проходит предсезонные сборы', detail: 'Клуб организовал предсезонные сборы. Игроки работают над физической подготовкой и командным взаимодействием. Регулярные тренировки повысят общий рейтинг команды.' },
 ];
 
 export default function HomeScreen() {
@@ -110,7 +111,7 @@ export default function HomeScreen() {
               style={s.managerBadge}
               onPress={() => navigation.navigate('ManagerProfile')}
             >
-              <Text style={s.managerIcon}>👤</Text>
+              <Ionicons name='person-outline' size={14} color='#00d4ff' />
               <Text style={s.managerName}>{managerName || '...'}</Text>
               <Text style={s.managerArrow}>›</Text>
             </TouchableOpacity>
@@ -143,7 +144,7 @@ export default function HomeScreen() {
         {/* Предсезонка или матч */}
         {showPreseason ? (
           <TouchableOpacity style={s.preseasonBanner} onPress={() => navigation.navigate('Preseason')}>
-            <Text style={s.preseasonIcon}>🏋️</Text>
+            <Ionicons name='barbell-outline' size={32} color='#bb99ff' style={{ marginRight: 14 }} />
             <View style={s.preseasonInfo}>
               <Text style={s.preseasonTitle}>ПРЕДСЕЗОННАЯ ПОДГОТОВКА</Text>
               <Text style={s.preseasonSub}>3 дня · 6 товарищеских матчей</Text>
@@ -180,12 +181,12 @@ export default function HomeScreen() {
         {/* Новости — динамические */}
         <TouchableOpacity style={s.newsCard} onPress={() => setShowNews(true)} activeOpacity={0.8}>
           <Animated.View style={[s.newsInner, { opacity: newsAnim }]}>
-            <Text style={s.newsIcon}>{currentNews.icon}</Text>
+            <Ionicons name={currentNews.icon} size={28} color='#00d4ff' />
             <View style={s.newsText}>
               <Text style={s.newsTitle}>{currentNews.title}</Text>
               <Text style={s.newsSub}>{currentNews.text}</Text>
             </View>
-            <Text style={s.newsMore}>›</Text>
+            <Ionicons name='chevron-forward' size={20} color='#8888aa' />
           </Animated.View>
           <View style={s.newsDots}>
             {NEWS.map((_, i) => (
@@ -214,7 +215,7 @@ export default function HomeScreen() {
                     onPress={() => setExpandedNews(expandedNews === item.id ? null : item.id)}
                   >
                     <View style={s.newsItemHeader}>
-                      <Text style={s.newsItemIcon}>{item.icon}</Text>
+                      <Ionicons name={item.icon} size={24} color='#00d4ff' />
                       <View style={{ flex: 1 }}>
                         <Text style={s.newsItemTitle}>{item.title}</Text>
                         <Text style={s.newsItemSub}>{item.text}</Text>

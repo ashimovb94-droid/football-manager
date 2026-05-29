@@ -4,6 +4,7 @@ import { loadManagerData, loadSession } from '../utils/storage';
 import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const ROUND_NAMES = { 1: '1/16', 2: '1/8', 3: '1/4', 4: '1/2', 5: 'ФИНАЛ' };
 const ROUND_COLORS = { 1: '#8888aa', 2: '#00d4ff', 3: '#7b2fff', 4: '#ff6b35', 5: '#ffd700', 6: '#00ff88' };
@@ -116,7 +117,7 @@ export default function CupScreen() {
     <View style={s.screen}>
       {/* Шапка */}
       <View style={s.header}>
-        <Text style={s.cupEmoji}>🏆</Text>
+        <Ionicons name='trophy-outline' size={40} color='#ffd700' />
         <View>
           <Text style={s.title}>КУБОК АНГЛИИ</Text>
           <Text style={s.sub}>FA CUP · СЕЗОН 2025/26</Text>

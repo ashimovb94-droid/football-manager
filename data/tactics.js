@@ -106,11 +106,11 @@ export const STYLES = [
 ];
 
 export const MENTALITIES = [
-  { id: 'very_attack',  label: 'ОЧЕНЬ АТАКА' },
+  { id: 'very_attack',  label: 'ТОТАЛЬНАЯ АТАКА' },
   { id: 'attack',       label: 'АТАКА' },
   { id: 'balanced',     label: 'БАЛАНС' },
   { id: 'defensive',    label: 'ОБОРОНА' },
-  { id: 'very_defense', label: 'ОЧЕНЬ ОБОРОНА' },
+  { id: 'very_defense', label: 'АВТОБУС 🚌' },
 ];
 
 // Правильные приоритеты — строго по группам

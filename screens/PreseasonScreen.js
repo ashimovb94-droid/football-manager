@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { loadSession, loadManagerData } from '../utils/storage';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
 
