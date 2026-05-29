@@ -58,3 +58,10 @@ class EuroMatch(Base):
     status       = Column(String, default='scheduled')
     date         = Column(String)
     leg          = Column(Integer, default=1)  # 1 или 2 (для двух матчей)
+
+class PreseasonConfig(Base):
+    __tablename__ = "preseason_config"
+    id          = Column(Integer, primary_key=True)
+    start_date  = Column(String)   # ISO datetime когда стартовала предсезонка
+    season_start= Column(String)   # ISO datetime когда стартует сезон
+    status      = Column(String, default='active')  # active / finished
