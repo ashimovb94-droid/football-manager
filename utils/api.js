@@ -86,4 +86,29 @@ export const api = {
     });
     return res.json();
   },
+  playMatch: async (token, match_id) => {
+    const res = await fetch(`${BASE_URL}/match/play`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, match_id }),
+    });
+    return res.json();
+  },
+  getPreseasonStatus: async () => {
+    const res = await fetch(`${BASE_URL}/preseason/status`);
+    return res.json();
+  },
+  playPreseasonMatch: async (token, day, match_num) => {
+    const res = await fetch(`${BASE_URL}/preseason/play`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, day, match_num }),
+    });
+    return res.json();
+  },
+  playFriendly: async (token, opponent_id) => {
+    const res = await fetch(`${BASE_URL}/match/friendly`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, opponent_id }),
+    });
+    return res.json();
+  },
 };

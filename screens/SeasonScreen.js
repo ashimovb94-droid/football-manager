@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { loadManagerData } from '../utils/storage';
+import { loadManagerData, loadSession } from '../utils/storage';
+import { useNavigation } from '@react-navigation/native';
 import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
 
@@ -42,8 +43,13 @@ export default function SeasonScreen() {
   const [maxRound] = useState(46);
   const [loading, setLoading] = useState(true);
   const [club, setClub] = useState(null);
+  const [token, setToken] = useState(null);
+  const [preseasonDone, setPreseasonDone] = useState(false);
+  const navigation = useNavigation();
 
   useEffect(() => {
+    loadSession().then(({ token }) => setToken(token));
+    api.getPreseasonStatus().then(s => setPreseasonDone(s?.season_started || false));
     loadManagerData().then(({ club }) => {
       setClub(club);
       const lg = club?.league || 'championship';
@@ -164,7 +170,17 @@ export default function SeasonScreen() {
             renderItem={({ item }) => {
               const isMyMatch = Number(item.home_id) === myClubId || Number(item.away_id) === myClubId;
               return (
-                <View style={[s.matchCard, isMyMatch && s.matchCardMe]}>
+                <TouchableOpacity
+                style={[s.matchCard, isMyMatch && s.matchCardMe]}
+                onPress={() => {
+                  if (!isMyMatch || item.status === 'finished' || !preseasonDone) return;
+                  navigation.navigate('Match', {
+                    matchId: item.id,
+                    homeClub: { id: String(item.home_id), primary: item.home_primary, secondary: '#fff', name: item.home_name },
+                    awayClub: { id: String(item.away_id), primary: item.away_primary, secondary: '#fff', name: item.away_name },
+                  });
+                }}
+              >
                   <View style={s.matchTeam}>
                     <ClubBadge club={{ id: String(item.home_id), primary: item.home_primary, secondary: '#fff', name: item.home_name }} size={32} />
                     <Text style={[s.matchTeamName, isMyMatch && s.textMe]} numberOfLines={1}>{item.home_name}</Text>
@@ -183,7 +199,13 @@ export default function SeasonScreen() {
                     <ClubBadge club={{ id: String(item.away_id), primary: item.away_primary, secondary: '#fff', name: item.away_name }} size={32} />
                     <Text style={[s.matchTeamName, isMyMatch && s.textMe]} numberOfLines={1}>{item.away_name}</Text>
                   </View>
-                </View>
+                {isMyMatch && item.status === 'scheduled' && preseasonDone && (
+                  <View style={s.playBadge}><Text style={s.playBadgeText}>▶ ИГРАТЬ</Text></View>
+                )}
+                {item.status === 'finished' && (
+                  <View style={s.finishedBadge}><Text style={s.finishedBadgeText}>✓</Text></View>
+                )}
+              </TouchableOpacity>
               );
             }}
           />
@@ -233,5 +255,9 @@ const s = StyleSheet.create({
   matchScore:    { alignItems: 'center', paddingHorizontal: 8 },
   scoreText:     { fontSize: 18, fontWeight: '900', color: '#fff' },
   scoreVs:       { fontSize: 14, fontWeight: '900', color: '#00d4ff' },
-  scoreDate:     { fontSize: 10, color: '#8888aa', marginTop: 2 },
+  scoreDate:      { fontSize: 10, color: '#8888aa', marginTop: 2 },
+  playBadge:      { backgroundColor: '#00d4ff', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6, alignSelf: 'center' },
+  playBadgeText:  { fontSize: 9, fontWeight: '900', color: '#000', letterSpacing: 1 },
+  finishedBadge:  { backgroundColor: '#00ff8820', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6, alignSelf: 'center' },
+  finishedBadgeText: { fontSize: 9, fontWeight: '900', color: '#00ff88' },
 });

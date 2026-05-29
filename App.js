@@ -11,6 +11,8 @@ import SquadScreen from './screens/SquadScreen';
 import SeasonScreen from './screens/SeasonScreen';
 import TransferScreen from './screens/TransferScreen';
 import TacticsScreen from './screens/TacticsScreen';
+import MatchScreen from './screens/MatchScreen';
+import PreseasonScreen from './screens/PreseasonScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -69,6 +71,8 @@ export default function App() {
         <Stack.Screen name="Auth"       component={AuthScreen} />
         <Stack.Screen name="ClubSelect" component={ClubSelectScreen} />
         <Stack.Screen name="Main"       component={MainTabs} />
+        <Stack.Screen name="Match"      component={MatchScreen} />
+        <Stack.Screen name="Preseason"  component={PreseasonScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

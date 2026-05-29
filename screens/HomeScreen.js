@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { loadManagerData } from '../utils/storage';
+import { useNavigation } from '@react-navigation/native';
 import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
 
@@ -8,13 +9,28 @@ export default function HomeScreen() {
   const [club, setClub] = useState(null);
   const [managerName, setManagerName] = useState(null);
   const [playerCount, setPlayerCount] = useState(0);
+  const [nextMatch, setNextMatch] = useState(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const load = async () => {
       const { token } = await import('../utils/storage').then(m => m.loadSession());
       const { club, managerName } = await loadManagerData();
       setManagerName(managerName);
-      if (club) api.getPlayers(club.id).then(p => setPlayerCount(p.length));
+      if (club) {
+        api.getPlayers(club.id).then(p => setPlayerCount(p.length));
+        // Загружаем следующий матч
+        const lg = club.league || 'championship';
+        const roundData = await api.getCurrentRound(lg);
+        const matches = await api.getMatches(lg, roundData.round || 1);
+        const myMatch = matches.find(m => 
+          Number(m.home_id) === Number(club.id) || Number(m.away_id) === Number(club.id)
+        );
+        if (myMatch) {
+          const isHome = Number(myMatch.home_id) === Number(club.id);
+          setNextMatch({ ...myMatch, isHome });
+        }
+      }
       if (token) {
         const user = await api.getMe(token);
         if (user && user.club) {
@@ -36,7 +52,11 @@ export default function HomeScreen() {
     { id: 3, icon: '📋', title: 'Первый матч сезона', text: 'Через 7 дней стартует Чемпионшип', time: '1 д назад' },
   ];
 
-  const opponent = { id: '3', name: 'Millwall', primary: '#001D5E', secondary: '#FFFFFF' };
+  const opponent = nextMatch ? (
+    nextMatch.isHome
+      ? { id: String(nextMatch.away_id), primary: nextMatch.away_primary || '#333', secondary: '#fff', name: nextMatch.away_name }
+      : { id: String(nextMatch.home_id), primary: nextMatch.home_primary || '#333', secondary: '#fff', name: nextMatch.home_name }
+  ) : null;
 
   return (
     <View style={s.screen}>
@@ -79,16 +99,28 @@ export default function HomeScreen() {
             </View>
             <View style={s.matchCenter}>
               <Text style={s.matchVs}>VS</Text>
-              <Text style={s.matchDate}>12 АВГ</Text>
-              <Text style={s.matchTime}>15:00</Text>
-              <Text style={s.matchComp}>ЧЕМПИОНШИП</Text>
+              <Text style={s.matchDate}>{nextMatch?.date?.slice(5) || '—'}</Text>
+              <Text style={s.matchComp}>{club?.league === 'epl' ? 'АПЛ' : 'ЧЕМПИОНШИП'}</Text>
             </View>
             <View style={s.matchTeam}>
-              <ClubBadge club={opponent} size={48} />
-              <Text style={s.matchTeamName}>{opponent.name}</Text>
+              <ClubBadge club={opponent || {}} size={48} />
+              <Text style={s.matchTeamName}>{opponent?.name || '...'}</Text>
             </View>
           </View>
         </View>
+
+        {/* Предсезонка */}
+        <TouchableOpacity
+          style={{ backgroundColor: '#7b2fff30', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 16, borderWidth: 1.5, borderColor: '#7b2fff' }}
+          onPress={() => navigation.navigate('Preseason')}
+        >
+          <Text style={{ fontSize: 32, marginRight: 14 }}>🏋️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '900', color: '#fff', letterSpacing: 1 }}>ПРЕДСЕЗОННАЯ ПОДГОТОВКА</Text>
+            <Text style={{ fontSize: 11, color: '#bb99ff', marginTop: 3 }}>3 дня · 6 товарищеских матчей</Text>
+          </View>
+          <Text style={{ fontSize: 26, color: '#7b2fff', fontWeight: '900' }}>›</Text>
+        </TouchableOpacity>
 
         <Text style={s.sectionTitle}>НОВОСТИ КЛУБА</Text>
         {news.map(item => (
