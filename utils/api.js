@@ -79,26 +79,28 @@ export const api = {
     const res = await fetch(`${BASE_URL}/season/current-round/${league}`);
     return res.json();
   },
+
+  buyPlayerOffer: async (token, player_id, offer) => {
+    const res = await fetch(`${BASE_URL}/transfers/buy`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, player_id, offer }),
+    });
+    return res.json();
+  },
+  sellPlayerOffer: async (token, player_id, price) => {
+    const res = await fetch(`${BASE_URL}/transfers/sell`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, player_id, price }),
+    });
+    return res.json();
+  },
   getMarket: async (params = {}) => {
     const q = new URLSearchParams();
     if (params.position) q.append('position', params.position);
     if (params.min_ovr) q.append('min_ovr', params.min_ovr);
     if (params.max_price) q.append('max_price', params.max_price);
+    if (params.free_agents) q.append('free_agents', 'true');
     const res = await fetch(`${BASE_URL}/transfers/market?${q}`);
-    return res.json();
-  },
-  buyPlayer: async (token, player_id) => {
-    const res = await fetch(`${BASE_URL}/transfers/buy`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, player_id, transfer_type: 'buy' }),
-    });
-    return res.json();
-  },
-  sellPlayer: async (token, player_id) => {
-    const res = await fetch(`${BASE_URL}/transfers/sell`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, player_id, transfer_type: 'sell' }),
-    });
     return res.json();
   },
   playMatch: async (token, match_id) => {
@@ -112,6 +114,24 @@ export const api = {
     const res = await fetch(`${BASE_URL}/match/friendly`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, opponent_id }),
+    });
+    return res.json();
+  },
+  listPlayer: async (token, player_id, asking_price) => {
+    const res = await fetch(`${BASE_URL}/transfers/list`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, player_id, asking_price }),
+    });
+    return res.json();
+  },
+  getTransferOffers: async (token) => {
+    const res = await fetch(`${BASE_URL}/transfers/offers/${token}`);
+    return res.json();
+  },
+  respondOffer: async (token, offer_id, accept) => {
+    const res = await fetch(`${BASE_URL}/transfers/offer-response`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, offer_id, accept }),
     });
     return res.json();
   },

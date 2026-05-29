@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Modal, FlatList } from 'react-native';
 import { FORMATIONS, STYLES, MENTALITIES, GROUP } from '../data/tactics';
+import { useNavigation } from '@react-navigation/native';
 import FieldPlayerCard from '../components/FieldPlayerCard';
 import { buildAutoLineup } from '../utils/autoLineup';
 import { loadManagerData, loadSession } from '../utils/storage';
@@ -38,6 +39,7 @@ export default function TacticsScreen() {
   const [selectingPos, setSelectingPos] = useState(null);
   const [incompleteAlert, setIncompleteAlert] = useState(false);
   const [saved, setSaved] = useState(false);
+  const navigation = useNavigation();
 
   useEffect(() => { init(); }, []);
 
@@ -164,6 +166,9 @@ export default function TacticsScreen() {
   return (
     <View style={s.screen}>
       <View style={s.header}>
+        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+          <Text style={s.backText}>←</Text>
+        </TouchableOpacity>
         <Text style={s.title}>ТАКТИКА</Text>
         <View style={s.headerRight}>
           {saved && <Text style={s.savedBadge}>✓ СОХРАНЕНО</Text>}
@@ -287,7 +292,9 @@ export default function TacticsScreen() {
 
 const s = StyleSheet.create({
   screen:              { flex: 1, backgroundColor: '#0a0a0f' },
-  header:              { paddingTop: 56, paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  header:              { paddingTop: 56, paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn:             { width: 36, height: 36, backgroundColor: '#12121a', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  backText:            { fontSize: 18, color: '#00d4ff', fontWeight: '900' },
   headerRight:         { alignItems: 'flex-end' },
   title:               { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: 3 },
   sub:                 { fontSize: 11, color: '#00d4ff', letterSpacing: 2 },
