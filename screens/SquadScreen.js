@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Modal, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Modal, TextInput, Image } from 'react-native';
 import { loadManagerData, loadSession } from '../utils/storage';
 import { api } from '../utils/api';
 import PlayerCard from '../components/PlayerCard';
+import PlayerAvatar from '../components/PlayerAvatar';
 
 const POSITIONS = ['ALL', 'GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LW', 'RW', 'ST'];
 const POS_COLORS = {
@@ -71,9 +72,7 @@ export default function SquadScreen() {
 
   const renderPlayer = ({ item }) => (
     <TouchableOpacity style={s.card} onPress={() => setSelected(item)}>
-      <View style={[s.posTag, { backgroundColor: POS_COLORS[item.position] || '#666' }]}>
-        <Text style={s.posText}>{item.position}</Text>
-      </View>
+      <PlayerAvatar player={item} size={44} />
       <View style={s.info}>
         <Text style={s.name}>{item.name} {item.surname}</Text>
         <Text style={s.detail}>{item.nationality} · {item.age} лет</Text>
@@ -91,9 +90,7 @@ export default function SquadScreen() {
     const label = getContractLabel(item.contract);
     return (
       <View style={[s.contractCard, { borderLeftColor: color }]}>
-        <View style={[s.posTag, { backgroundColor: POS_COLORS[item.position] || '#666' }]}>
-          <Text style={s.posText}>{item.position}</Text>
-        </View>
+        <PlayerAvatar player={item} size={44} />
         <View style={s.info}>
           <Text style={s.name}>{item.name} {item.surname}</Text>
           <Text style={s.detail}>До {item.contract} · £{item.salary}k/нед</Text>
@@ -173,6 +170,7 @@ export default function SquadScreen() {
       {selected && (
         <PlayerCard player={selected} onClose={() => setSelected(null)} />
       )}
+
 
       <Modal visible={!!sellPlayer} transparent animationType="slide">
         <View style={s.overlay}>

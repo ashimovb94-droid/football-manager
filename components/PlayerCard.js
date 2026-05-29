@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image } from 'react-native';
+import PlayerAvatar from './PlayerAvatar';
 import { Ionicons } from '@expo/vector-icons';
 
 const POS_COLORS = {
@@ -30,6 +31,7 @@ export default function PlayerCard({ player, visible, onClose }) {
         <View style={s.modal}>
           {/* Шапка */}
           <View style={[s.header, { backgroundColor: POS_COLORS[player.position] + '22' }]}>
+            <PlayerAvatar player={player} size={56} showPos={false} />
             <View style={[s.posTag, { backgroundColor: POS_COLORS[player.position] || '#666' }]}>
               <Text style={s.posText}>{player.position}</Text>
             </View>
@@ -134,6 +136,8 @@ export default function PlayerCard({ player, visible, onClose }) {
 const s = StyleSheet.create({
   overlay:      { flex: 1, backgroundColor: '#000000bb', justifyContent: 'flex-end' },
   modal:        { backgroundColor: '#12121a', borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: '#ffffff15', maxHeight: '85%' },
+
+  playerPhoto:  { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#ffffff40' },
   header:       { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 14, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   posTag:       { width: 48, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   posText:      { fontSize: 11, fontWeight: '900', color: '#fff', letterSpacing: 1 },

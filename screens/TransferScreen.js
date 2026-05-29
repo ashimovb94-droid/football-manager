@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, ScrollView, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, ScrollView, ActivityIndicator, TextInput, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import PlayerAvatar from '../components/PlayerAvatar';
 import { loadManagerData, loadSession, saveManagerData } from '../utils/storage';
 import { api } from '../utils/api';
 
@@ -131,9 +133,7 @@ export default function TransferScreen() {
 
   const renderMarketPlayer = ({ item }) => (
     <TouchableOpacity style={s.card} onPress={() => { setSelected(item); setOfferAmount(String(item.value)); }}>
-      <View style={[s.posTag, { backgroundColor: POS_COLORS[item.position] || '#666' }]}>
-        <Text style={s.posText}>{item.position}</Text>
-      </View>
+      <PlayerAvatar player={item} size={44} />
       <View style={s.info}>
         <View style={s.nameRow}>
           <Text style={s.name}>{item.name} {item.surname}</Text>
@@ -230,9 +230,7 @@ export default function TransferScreen() {
           ListEmptyComponent={<View style={s.empty}><Text style={s.emptyText}>Нет выставленных игроков</Text></View>}
           renderItem={({ item }) => (
             <View style={[s.card, { borderColor: '#ff6b3540' }]}>
-              <View style={[s.posTag, { backgroundColor: POS_COLORS[item.position] || '#666' }]}>
-                <Text style={s.posText}>{item.position}</Text>
-              </View>
+              <PlayerAvatar player={item} size={44} />
               <View style={s.info}>
                 <Text style={s.name}>{item.name} {item.surname}</Text>
                 <Text style={s.detail}>{item.nationality} · {item.age} лет</Text>
@@ -255,9 +253,7 @@ export default function TransferScreen() {
           ListEmptyComponent={<View style={s.empty}><Text style={s.emptyText}>Нет входящих предложений</Text></View>}
           renderItem={({ item }) => (
             <View style={[s.card, { borderColor: '#00d4ff40' }]}>
-              <View style={[s.posTag, { backgroundColor: POS_COLORS[item.position] || '#666' }]}>
-                <Text style={s.posText}>{item.position}</Text>
-              </View>
+              <PlayerAvatar player={item} size={44} />
               <View style={s.info}>
                 <Text style={s.name}>{item.name} {item.surname}</Text>
                 <Text style={s.clubName}>{item.from_club_name}</Text>
@@ -305,8 +301,8 @@ export default function TransferScreen() {
       <Modal visible={!!selected} transparent animationType="slide">
         <View style={s.overlay}>
           <View style={s.modal}>
-            <View style={[s.posTagLg, { backgroundColor: POS_COLORS[selected?.position] || '#666' }]}>
-              <Text style={s.posTextLg}>{selected?.position}</Text>
+            <View style={{ alignSelf: 'center', marginBottom: 8 }}>
+              {selected && <PlayerAvatar player={selected} size={80} showPos={false} />}
             </View>
             <Text style={s.modalName}>{selected?.name} {selected?.surname}</Text>
             <Text style={s.modalClub}>{selected?.club_name} · {selected?.nationality}</Text>
@@ -464,6 +460,10 @@ const s = StyleSheet.create({
   list:            { padding: 12, gap: 8 },
   card:            { backgroundColor: '#12121a', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#ffffff10' },
   posTag:          { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  playerAvatar:    { position: 'relative', width: 44, height: 44 },
+  avatarInner:     { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  posMini:         { position: 'absolute', bottom: -4, right: -4, borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1 },
+  posMiniText:     { fontSize: 7, fontWeight: '900', color: '#fff' },
   posText:         { fontSize: 8, fontWeight: '900', color: '#fff' },
   info:            { flex: 1 },
   nameRow:         { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
