@@ -147,6 +147,16 @@ def buy_player(data: BuyData, db: Session = Depends(get_db)):
         selling_club.budget += data.offer
     player.club_id = user.club_id
     db.commit()
+    db.commit()
+    try:
+        from app.utils.news_helper import create_news
+        selling_name = selling_club.name if selling_club else "свободный агент"
+        create_news(db, user.club_id, "transfer",
+            f"{club.name} подписал {player.name} {player.surname}",
+            f"{player.position} из {selling_name} за £{data.offer:.1f}M. Рейтинг: {player.overall}",
+            "person-add-outline")
+    except Exception as e:
+        print(f"News error: {e}")
 
     return {
         "success": True,

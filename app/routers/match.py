@@ -63,7 +63,26 @@ def play_match(data: PlayMatchData, db: Session = Depends(get_db)):
     
     home_club = db.query(Club).filter(Club.id == match.home_id).first()
     away_club = db.query(Club).filter(Club.id == match.away_id).first()
-    
+
+    # Новость о матче
+    from app.utils.news_helper import create_news
+    hs, as_ = result["home_score"], result["away_score"]
+    is_home = match.home_id == user.club_id
+    my_score = hs if is_home else as_
+    opp_score = as_ if is_home else hs
+    opp_name = away_club.name if is_home else home_club.name
+    if my_score > opp_score:
+        icon = "trophy-outline"
+    elif my_score < opp_score:
+        title = f"Поражение от {opp_name}"
+        icon = "sad-outline"
+    else:
+        title = f"Ничья с {opp_name}"
+        icon = "remove-circle-outline"
+    create_news(db, user.club_id, "match", title,
+        f"Тур {match.round}. Счёт: {hs}-{as_}. xG: {result["home_xg"]}-{result["away_xg"]}",
+        icon)
+
     return {
         "match_id": match.id,
         "home_name": home_club.name,
