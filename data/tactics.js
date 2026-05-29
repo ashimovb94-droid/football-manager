@@ -31,6 +31,22 @@ export const FORMATIONS = {
       { id: 'lw',  label: 'LW',  x: 20, y: 22 },
     ]
   },
+  '4-3-3a': {
+    name: '4-3-3a',
+    positions: [
+      { id: 'gk',  label: 'GK',  x: 50, y: 88 },
+      { id: 'rb',  label: 'RB',  x: 80, y: 70 },
+      { id: 'cb1', label: 'CB',  x: 62, y: 70 },
+      { id: 'cb2', label: 'CB',  x: 38, y: 70 },
+      { id: 'lb',  label: 'LB',  x: 20, y: 70 },
+      { id: 'cm1', label: 'CM',  x: 65, y: 52 },
+      { id: 'cam', label: 'CAM', x: 50, y: 44 },
+      { id: 'cm2', label: 'CM',  x: 35, y: 52 },
+      { id: 'rw',  label: 'RW',  x: 80, y: 22 },
+      { id: 'st',  label: 'ST',  x: 50, y: 15 },
+      { id: 'lw',  label: 'LW',  x: 20, y: 22 },
+    ]
+  },
   '4-2-3-1': {
     name: '4-2-3-1',
     positions: [

@@ -153,6 +153,13 @@ export const api = {
     });
     return res.json();
   },
+  getNews: async (token) => {
+    const res = await fetch(`${BASE_URL}/news/list`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
   getCupBracket: async () => {
     const res = await fetch(`${BASE_URL}/cup/bracket`);
     return res.json();

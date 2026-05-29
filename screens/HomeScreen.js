@@ -9,11 +9,11 @@ import MiniField from '../components/MiniField';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-const NEWS = [
-  { id: 1, icon: 'newspaper-outline', title: 'Предсезонная подготовка', text: 'Команда готовится к новому сезону', detail: 'Тренерский штаб разработал программу предсезонной подготовки. Игроки проходят физические тесты, тактические занятия и товарищеские матчи для набора оптимальной формы перед стартом сезона.' },
-  { id: 2, icon: 'cash-outline', title: 'Трансферное окно открыто', text: 'Летнее окно открыто до 31 августа', detail: 'Летнее трансферное окно официально открыто. У вас есть возможность усилить состав новыми игроками или продать тех кто не вписывается в тактические планы. Следите за бюджетом!' },
-  { id: 3, icon: 'calendar-outline', title: 'Первый матч сезона', text: 'Скоро стартует Чемпионшип', detail: 'Чемпионшип стартует 9 августа. Ваша команда готова к борьбе за повышение в АПЛ. Убедитесь что состав и тактика подготовлены к первому туру.' },
-  { id: 4, icon: 'barbell-outline', title: 'Тренировочный лагерь', text: 'Команда проходит предсезонные сборы', detail: 'Клуб организовал предсезонные сборы. Игроки работают над физической подготовкой и командным взаимодействием. Регулярные тренировки повысят общий рейтинг команды.' },
+const DEFAULT_NEWS = [
+  { id: 1, icon: 'newspaper-outline', title: 'Предсезонная подготовка', text: 'Команда готовится к новому сезону', detail: 'Тренерский штаб разработал программу предсезонной подготовки.' },
+  { id: 2, icon: 'cash-outline', title: 'Трансферное окно открыто', text: 'Летнее окно открыто до 31 августа', detail: 'Летнее трансферное окно официально открыто.' },
+  { id: 3, icon: 'calendar-outline', title: 'Первый матч сезона', text: 'Скоро стартует Чемпионшип', detail: 'Чемпионшип стартует 9 августа.' },
+  { id: 4, icon: 'barbell-outline', title: 'Тренировочный лагерь', text: 'Команда проходит предсезонные сборы', detail: 'Регулярные тренировки повысят рейтинг команды.' },
 ];
 
 export default function HomeScreen() {
@@ -24,6 +24,7 @@ export default function HomeScreen() {
   const [preseasonStatus, setPreseasonStatus] = useState(null);
   const [tactics, setTactics] = useState({ formation: '4-3-3', lineup: {} });
   const [newsIdx, setNewsIdx] = useState(0);
+  const [news, setNews] = useState(DEFAULT_NEWS);
   const [showNews, setShowNews] = useState(false);
   const [expandedNews, setExpandedNews] = useState(null);
   const newsAnim = useRef(new Animated.Value(1)).current;
@@ -55,6 +56,21 @@ export default function HomeScreen() {
         } else setClub(club);
         const ps = await api.getPreseasonStatus();
         setPreseasonStatus(ps);
+        if (token) {
+          try {
+            const serverNews = await api.getNews(token);
+            if (serverNews && serverNews.length > 0) {
+              const mapped = serverNews.map(n => ({
+                id: `server_${n.id}`,
+                icon: n.icon || 'newspaper-outline',
+                title: n.title,
+                text: n.text,
+                detail: n.text,
+              }));
+              setNews([...mapped, ...DEFAULT_NEWS].slice(0, 8));
+            }
+          } catch(e) {}
+        }
         const t = await api.loadTactics(token);
         if (t && !t.detail) setTactics({ formation: t.formation || '4-3-3', lineup: t.lineup || {} });
       } else setClub(club);
@@ -84,7 +100,7 @@ export default function HomeScreen() {
         Animated.timing(newsAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
         Animated.timing(newsAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
       ]).start();
-      setNewsIdx(i => (i + 1) % NEWS.length);
+      setNewsIdx(i => (i + 1) % news.length);
     }, 4000);
     return () => clearInterval(interval);
   }, []);
@@ -96,7 +112,7 @@ export default function HomeScreen() {
   ) : null;
 
   const showPreseason = preseasonStatus?.started && !preseasonStatus?.season_started;
-  const currentNews = NEWS[newsIdx];
+  const currentNews = news.length > 0 ? news[newsIdx % news.length] : DEFAULT_NEWS[0];
 
   return (
     <View style={s.screen}>
@@ -189,7 +205,7 @@ export default function HomeScreen() {
             <Ionicons name='chevron-forward' size={20} color='#8888aa' />
           </Animated.View>
           <View style={s.newsDots}>
-            {NEWS.map((_, i) => (
+            {news.map((_, i) => (
               <View key={i} style={[s.dot, newsIdx === i && s.dotActive]} />
             ))}
           </View>
@@ -206,7 +222,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
               <FlatList
-                data={NEWS}
+                data={news}
                 keyExtractor={i => String(i.id)}
                 contentContainerStyle={{ padding: 16, gap: 10 }}
                 renderItem={({ item }) => (
