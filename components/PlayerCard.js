@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const POS_COLORS = {
   GK: '#f59e0b', CB: '#3b82f6', LB: '#3b82f6', RB: '#3b82f6',
@@ -56,7 +57,7 @@ export default function PlayerCard({ player, visible, onClose }) {
             <View style={s.divider} />
 
             {/* Контракт */}
-            <Text style={s.sectionTitle}>💼 КОНТРАКТ</Text>
+            <Ionicons name='briefcase-outline' size={16} color='#8888aa' />
             <View style={s.infoRow}>
               <View style={s.infoBox}>
                 <Text style={s.infoVal}>£{player.salary}k</Text>
@@ -75,7 +76,7 @@ export default function PlayerCard({ player, visible, onClose }) {
             <View style={s.divider} />
 
             {/* Сезонная статистика */}
-            <Text style={s.sectionTitle}>📊 СТАТИСТИКА СЕЗОНА</Text>
+            <Ionicons name='bar-chart-outline' size={16} color='#8888aa' />
             <View style={s.infoRow}>
               <View style={s.infoBox}>
                 <Text style={s.infoVal}>{player.stats?.matches || 0}</Text>
@@ -98,7 +99,7 @@ export default function PlayerCard({ player, visible, onClose }) {
             <View style={s.divider} />
 
             {/* Травма */}
-            <Text style={s.sectionTitle}>🏥 ЗДОРОВЬЕ</Text>
+            <Ionicons name='medkit-outline' size={16} color='#8888aa' />
             <View style={s.healthRow}>
               <View style={s.healthBar}>
                 <Text style={s.healthLabel}>УСТАЛОСТЬ</Text>

@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { clearSession } from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -50,7 +51,7 @@ export default function ManagerProfileScreen() {
         {/* Карточка менеджера */}
         <View style={s.managerCard}>
           <View style={s.avatar}>
-            <Text style={s.avatarText}>👤</Text>
+            <Ionicons name='person-outline' size={32} color='#00d4ff' />
           </View>
           <View style={s.managerInfo}>
             <Text style={s.managerName}>{managerName}</Text>
@@ -84,7 +85,7 @@ export default function ManagerProfileScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>ИСТОРИЯ КАРЬЕРЫ</Text>
           <View style={s.historyCard}>
-            <Text style={s.historyEmpty}>📋 История матчей появится после первого сезона</Text>
+            <Text style={s.historyEmpty}>История матчей появится после первого сезона</Text>
           </View>
         </View>
 
@@ -92,13 +93,13 @@ export default function ManagerProfileScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>ДОСТИЖЕНИЯ</Text>
           <View style={s.historyCard}>
-            <Text style={s.historyEmpty}>🏆 Выиграй первый трофей чтобы разблокировать</Text>
+            <Text style={s.historyEmpty}>Выиграй первый трофей чтобы разблокировать</Text>
           </View>
         </View>
 
         {/* Выход */}
         <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
-          <Text style={s.logoutIcon}>🚪</Text>
+          <Ionicons name='log-out-outline' size={22} color='#ff3355' />
           <Text style={s.logoutText}>ВЫЙТИ ИЗ АККАУНТА</Text>
         </TouchableOpacity>
       </ScrollView>
