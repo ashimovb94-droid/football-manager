@@ -108,15 +108,22 @@ export const api = {
     });
     return res.json();
   },
-  getPreseasonResults: async (token) => {
-    const res = await fetch(`${BASE_URL}/preseason/results`, {
+  playFriendly: async (token, opponent_id) => {
+    const res = await fetch(`${BASE_URL}/match/friendly`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, opponent_id }),
     });
     return res.json();
   },
   getPreseasonStatus: async () => {
     const res = await fetch(`${BASE_URL}/preseason/status`);
+    return res.json();
+  },
+  getPreseasonResults: async (token) => {
+    const res = await fetch(`${BASE_URL}/preseason/results`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
     return res.json();
   },
   playPreseasonMatch: async (token, day, match_num) => {
@@ -126,10 +133,14 @@ export const api = {
     });
     return res.json();
   },
-  playFriendly: async (token, opponent_id) => {
-    const res = await fetch(`${BASE_URL}/match/friendly`, {
+  getCupBracket: async () => {
+    const res = await fetch(`${BASE_URL}/cup/bracket`);
+    return res.json();
+  },
+  playCupMatch: async (token, match_id) => {
+    const res = await fetch(`${BASE_URL}/cup/play`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, opponent_id }),
+      body: JSON.stringify({ token, match_id }),
     });
     return res.json();
   },

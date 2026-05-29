@@ -14,6 +14,7 @@ import TacticsScreen from './screens/TacticsScreen';
 import MatchScreen from './screens/MatchScreen';
 import PreseasonScreen from './screens/PreseasonScreen';
 import ManagerProfileScreen from './screens/ManagerProfileScreen';
+import CupScreen from './screens/CupScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -38,7 +39,7 @@ function MainTabs() {
           const icons = {
             Club:      focused ? 'home'            : 'home-outline',
             Squad:     focused ? 'people'          : 'people-outline',
-            Tactics:   focused ? 'analytics'       : 'analytics-outline',
+            Cup:       focused ? 'trophy'          : 'trophy-outline',
             Season:    focused ? 'calendar'        : 'calendar-outline',
             Transfers: focused ? 'swap-horizontal' : 'swap-horizontal-outline',
           };
@@ -48,7 +49,7 @@ function MainTabs() {
           const { Text } = require('react-native');
           const labels = {
             Club: 'КЛУБ', Squad: 'СОСТАВ',
-            Tactics: 'ТАКТИКА', Season: 'СЕЗОН', Transfers: 'ТРАНСФЕРЫ'
+            Cup: 'КУБОК', Season: 'СЕЗОН', Transfers: 'ТРАНСФЕРЫ'
           };
           return <Text style={{ color, fontSize: 9, fontWeight: '800', letterSpacing: 1 }}>{labels[route.name]}</Text>;
         },
@@ -56,7 +57,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Club"      component={HomeScreen} />
       <Tab.Screen name="Squad"     component={SquadScreen} />
-      <Tab.Screen name="Tactics"   component={TacticsScreen} />
+      <Tab.Screen name="Cup"       component={CupScreen} />
       <Tab.Screen name="Season"    component={SeasonScreen} />
       <Tab.Screen name="Transfers" component={TransferScreen} />
     </Tab.Navigator>
@@ -68,13 +69,14 @@ export default function App() {
     <NavigationContainer>
       <StatusBar style="light" />
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
-        <Stack.Screen name="Splash"     component={SplashScreen} />
-        <Stack.Screen name="Auth"       component={AuthScreen} />
-        <Stack.Screen name="ClubSelect" component={ClubSelectScreen} />
-        <Stack.Screen name="Main"       component={MainTabs} />
-        <Stack.Screen name="Match"      component={MatchScreen} />
-        <Stack.Screen name="Preseason"  component={PreseasonScreen} />
+        <Stack.Screen name="Splash"         component={SplashScreen} />
+        <Stack.Screen name="Auth"           component={AuthScreen} />
+        <Stack.Screen name="ClubSelect"     component={ClubSelectScreen} />
+        <Stack.Screen name="Main"           component={MainTabs} />
+        <Stack.Screen name="Match"          component={MatchScreen} />
+        <Stack.Screen name="Preseason"      component={PreseasonScreen} />
         <Stack.Screen name="ManagerProfile" component={ManagerProfileScreen} />
+        <Stack.Screen name="Tactics"        component={TacticsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

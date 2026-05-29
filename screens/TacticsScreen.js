@@ -36,6 +36,7 @@ export default function TacticsScreen() {
   const [tab, setTab] = useState('formation');
   const [token, setToken] = useState(null);
   const [selectingPos, setSelectingPos] = useState(null);
+  const [incompleteAlert, setIncompleteAlert] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => { init(); }, []);
@@ -97,9 +98,12 @@ export default function TacticsScreen() {
   };
 
   const handleFormationChange = (f) => {
+    const newLineup = buildAutoLineup(players, f);
+    const filled = Object.keys(newLineup).length;
     setFormation(f);
-    setLineup({});
-    save({ formation: f, lineup: {} });
+    setLineup(newLineup);
+    save({ formation: f, lineup: newLineup });
+    if (filled < 11) setIncompleteAlert(true);
   };
 
   const handlePositionTap = (posId) => setSelectingPos(posId);
@@ -225,6 +229,20 @@ export default function TacticsScreen() {
         )}
       </ScrollView>
 
+      {/* Кастомный алерт неполного состава */}
+      <Modal visible={incompleteAlert} transparent animationType="fade">
+        <View style={s.alertOverlay}>
+          <View style={s.alertBox}>
+            <Text style={s.alertIcon}>⚠️</Text>
+            <Text style={s.alertTitle}>НЕПОЛНЫЙ СОСТАВ</Text>
+            <Text style={s.alertText}>Автозаполнение поставило не всех игроков. Добавь недостающих вручную.</Text>
+            <TouchableOpacity style={s.alertBtn} onPress={() => setIncompleteAlert(false)}>
+              <Text style={s.alertBtnText}>ПОНЯТНО</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Модалка выбора игрока */}
       <Modal visible={!!selectingPos} transparent animationType="slide">
         <View style={s.overlay}>
@@ -323,4 +341,11 @@ const s = StyleSheet.create({
   playerRowName:       { fontSize: 14, fontWeight: '700', color: '#fff' },
   playerRowNat:        { fontSize: 11, color: '#8888aa', marginTop: 2 },
   playerRowOvr:        { fontSize: 16, fontWeight: '900', color: '#00d4ff' },
+  alertOverlay:        { flex: 1, backgroundColor: '#000000bb', alignItems: 'center', justifyContent: 'center' },
+  alertBox:            { backgroundColor: '#12121a', borderRadius: 20, padding: 24, margin: 32, alignItems: 'center', borderWidth: 1, borderColor: '#ff6b3540' },
+  alertIcon:           { fontSize: 40, marginBottom: 12 },
+  alertTitle:          { fontSize: 16, fontWeight: '900', color: '#fff', letterSpacing: 2, marginBottom: 8 },
+  alertText:           { fontSize: 13, color: '#8888aa', textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+  alertBtn:            { backgroundColor: '#00d4ff', borderRadius: 12, paddingHorizontal: 32, paddingVertical: 12 },
+  alertBtnText:        { color: '#000', fontWeight: '900', letterSpacing: 2 },
 });

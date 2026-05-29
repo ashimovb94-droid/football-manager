@@ -36,6 +36,7 @@ export default function ClubSelectScreen({ navigation, route }) {
   const handleSign = async () => {
     try {
       const { token } = await loadSession();
+      console.log('handleSign token:', token ? 'OK' : 'NULL');
       if (token) await api.selectClub(token, selected.id);
       await saveManagerData(selected, managerName);
       if (token) {

@@ -174,17 +174,7 @@ export default function SeasonScreen() {
             renderItem={({ item }) => {
               const isMyMatch = Number(item.home_id) === myClubId || Number(item.away_id) === myClubId;
               return (
-                <TouchableOpacity
-                style={[s.matchCard, isMyMatch && s.matchCardMe]}
-                onPress={() => {
-                  if (!isMyMatch || item.status === 'finished' || !preseasonDone) return;
-                  navigation.navigate('Match', {
-                    matchId: item.id,
-                    homeClub: { id: String(item.home_id), primary: item.home_primary, secondary: '#fff', name: item.home_name },
-                    awayClub: { id: String(item.away_id), primary: item.away_primary, secondary: '#fff', name: item.away_name },
-                  });
-                }}
-              >
+                <View style={[s.matchCard, isMyMatch && s.matchCardMe]}>
                   <View style={s.matchTeam}>
                     <ClubBadge club={{ id: String(item.home_id), primary: item.home_primary, secondary: '#fff', name: item.home_name }} size={32} />
                     <Text style={[s.matchTeamName, isMyMatch && s.textMe]} numberOfLines={1}>{item.home_name}</Text>
@@ -203,13 +193,10 @@ export default function SeasonScreen() {
                     <ClubBadge club={{ id: String(item.away_id), primary: item.away_primary, secondary: '#fff', name: item.away_name }} size={32} />
                     <Text style={[s.matchTeamName, isMyMatch && s.textMe]} numberOfLines={1}>{item.away_name}</Text>
                   </View>
-                {isMyMatch && item.status === 'scheduled' && preseasonDone && (
-                  <View style={s.playBadge}><Text style={s.playBadgeText}>▶ ИГРАТЬ</Text></View>
-                )}
                 {item.status === 'finished' && (
                   <View style={s.finishedBadge}><Text style={s.finishedBadgeText}>✓</Text></View>
                 )}
-              </TouchableOpacity>
+              </View>
               );
             }}
           />
