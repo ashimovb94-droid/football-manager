@@ -97,6 +97,13 @@ export default function ManagerProfileScreen() {
           </View>
         </View>
 
+        {/* Тренировки */}
+        <TouchableOpacity style={s.trainingBtn} onPress={() => navigation.navigate('Training')}>
+          <Ionicons name="barbell-outline" size={22} color="#00d4ff" />
+          <Text style={s.trainingBtnText}>ТРЕНИРОВКИ</Text>
+          <Ionicons name="chevron-forward" size={20} color="#8888aa" />
+        </TouchableOpacity>
+
         {/* Выход */}
         <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
           <Ionicons name='log-out-outline' size={22} color='#ff3355' />
@@ -134,6 +141,8 @@ const s = StyleSheet.create({
   clubBudgetLabel: { fontSize: 9, color: '#8888aa', letterSpacing: 1 },
   historyCard:     { backgroundColor: '#12121a', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#ffffff10', alignItems: 'center' },
   historyEmpty:    { fontSize: 13, color: '#8888aa', textAlign: 'center', lineHeight: 20 },
+  trainingBtn:     { backgroundColor: '#12121a', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#00d4ff30', marginBottom: 8 },
+  trainingBtnText: { flex: 1, fontSize: 14, fontWeight: '900', color: '#00d4ff', letterSpacing: 2 },
   logoutBtn:       { backgroundColor: '#ff335515', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: '#ff335540', marginTop: 8 },
   logoutIcon:      { fontSize: 20 },
   logoutText:      { fontSize: 14, fontWeight: '900', color: '#ff3355', letterSpacing: 2 },

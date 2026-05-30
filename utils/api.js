@@ -153,6 +153,35 @@ export const api = {
     });
     return res.json();
   },
+  getTrainingTypes: async () => {
+    const res = await fetch(`${BASE_URL}/training/types`);
+    return res.json();
+  },
+  getTrainingStatus: async (token) => {
+    const res = await fetch(`${BASE_URL}/training/status/${token}`);
+    return res.json();
+  },
+  startTeamTraining: async (token, focus) => {
+    const res = await fetch(`${BASE_URL}/training/team`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, focus }),
+    });
+    return res.json();
+  },
+  autoIndividual: async (token) => {
+    const res = await fetch(`${BASE_URL}/training/auto-individual`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
+  startIndividualTraining: async (token, player_id, focus) => {
+    const res = await fetch(`${BASE_URL}/training/individual`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, player_id, focus }),
+    });
+    return res.json();
+  },
   getNews: async (token) => {
     const res = await fetch(`${BASE_URL}/news/list`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
