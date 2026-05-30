@@ -18,6 +18,7 @@ export default function PreseasonScreen({ navigation }) {
   const [results, setResults] = useState({});
   const [playing, setPlaying] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [gameYear, setGameYear] = useState(2026);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -28,6 +29,10 @@ export default function PreseasonScreen({ navigation }) {
 
   const init = async () => {
     const { token } = await loadSession();
+    try {
+      const state = await api.getGameState(token);
+      if (state?.game_year) setGameYear(state.game_year);
+    } catch(e) {}
     const { club } = await loadManagerData();
     setToken(token);
     setClub(club);
@@ -76,7 +81,7 @@ export default function PreseasonScreen({ navigation }) {
         </TouchableOpacity>
         <View>
           <Text style={s.title}>ПРЕДСЕЗОНКА</Text>
-          <Text style={s.sub}>ИЮЛЬ 2025 · 3 ДНЯ</Text>
+          <Text style={s.sub}>ИЮЛЬ {gameYear} · 3 ДНЯ</Text>
         </View>
       </View>
 

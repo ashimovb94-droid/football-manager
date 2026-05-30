@@ -32,6 +32,9 @@ export default function HomeScreen() {
     useCallback(() => {
       loadData();
       loadTactics();
+      // Обновляем каждые 60 секунд
+      const interval = setInterval(loadData, 60000);
+      return () => clearInterval(interval);
     }, [])
   );
 
