@@ -22,6 +22,17 @@ export default function SplashScreen({ navigation }) {
         if (user && !user.detail) {
           if (user.club_id && user.club) {
             await saveManagerData(user.club, user.manager_name);
+            // Проверяем фазу игры
+            try {
+              const state = await api.getGameState(session.token);
+              if (state?.phase === 'results') {
+                navigation.replace('SeasonResult', {
+                  league: state.league,
+                  myClubId: state.club?.id
+                });
+                return;
+              }
+            } catch(e) {}
             navigation.replace('Main');
           } else {
             navigation.replace('ClubSelect', { managerName: user.manager_name });
