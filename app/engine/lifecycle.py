@@ -41,6 +41,9 @@ def run():
             db.close()
             return
         
+        # Трансферы ботов
+        _bot_transfers(db)
+        
         # Симулируем матчи чья дата наступила
         _simulate_due_matches(db, season, now)
         
@@ -72,6 +75,34 @@ def run():
         traceback.print_exc()
     finally:
         db.close()
+
+def _bot_transfers(db):
+    """Боты покупают/продают игроков"""
+    import random
+    from app.models.player import Player
+    from app.models.bot_manager import BotManager
+    
+    bots = db.query(BotManager).all()
+    for bot in bots:
+        club = db.query(Club).filter(Club.id == bot.club_id).first()
+        if not club or club.budget < 2: continue
+        
+        # Покупка — ищем игрока позиции с нужным рейтингом
+        if random.random() < 0.1 and club.budget > 5:
+            target = db.query(Player).filter(
+                Player.club_id != bot.club_id,
+                Player.value <= club.budget * 0.3,
+                Player.overall >= club.rating - 5,
+            ).order_by(Player.overall.desc()).first()
+            if target and target.club_id:
+                selling_club = db.query(Club).filter(Club.id == target.club_id).first()
+                if selling_club and target.overall < 88:
+                    club.budget = round(club.budget - target.value, 2)
+                    selling_club.budget = round(selling_club.budget + target.value, 2)
+                    target.club_id = bot.club_id
+                    print(f"[BOT TRANSFER] {club.name} buys {target.name} {target.surname}")
+    
+    db.commit()
 
 def _handle_preseason(db, config, now):
     """Симулирует несыгранные товарняки прошедших дней"""
@@ -227,20 +258,40 @@ def _finish_league(db, season, league):
         for i, s in enumerate(standings):
             club = db.query(Club).filter(Club.id == s.club_id).first()
             if not club: continue
-            if i < 2:  # Авто повышение
+            if i < 2:
                 club.league = 'epl'
-                print(f"[PROMOTION] {club.name} promoted to EPL!")
-            elif i >= len(standings) - 3:  # Вылет
+                club.budget = round(club.budget + 80.0, 2)
+                print(f"[PROMOTION] {club.name} -> EPL +80M")
+            elif i < 6:
+                club.budget = round(club.budget + 5.0, 2)
+            elif i >= len(standings) - 3:
                 club.league = 'league1'
-                print(f"[RELEGATION] {club.name} relegated!")
+                club.budget = round(max(3.0, club.budget - 10.0), 2)
+                print(f"[RELEGATION] {club.name} relegated")
     elif league == 'epl':
         for i, s in enumerate(standings):
             club = db.query(Club).filter(Club.id == s.club_id).first()
             if not club: continue
-            if i >= len(standings) - 3:  # Вылет из АПЛ
+            tv = max(20.0, 120.0 - i * 5.0)
+            club.budget = round(club.budget + tv, 2)
+            if i >= len(standings) - 3:
                 club.league = 'championship'
-                print(f"[RELEGATION] {club.name} relegated from EPL!")
+                club.budget = round(max(5.0, club.budget - 30.0), 2)
+                print(f"[RELEGATION] {club.name} from EPL")
     
+    # Сохраняем историю карьеры
+    users_all = db.query(User).filter(User.club_id != None).all()
+    for user in users_all:
+        my_s = next((s for s in standings if s.club_id == user.club_id), None)
+        if not my_s: continue
+        pos = [s.club_id for s in standings].index(user.club_id) + 1
+        club = db.query(Club).filter(Club.id == user.club_id).first()
+        db.execute(text(
+            "INSERT INTO career_history (user_id, season_number, club_id, club_name, league, position, points, won, drawn, lost, gf, ga) "
+            f"VALUES ({user.id}, {user.season or 1}, {user.club_id}, '" + (club.name if club else "?") + f"', '{league}', {pos}, {my_s.points}, {my_s.won}, {my_s.drawn}, {my_s.lost}, {my_s.gf}, {my_s.ga})"
+        ))
+    db.commit()
+
     # Обновляем рейтинг менеджеров
     users = db.query(User).filter(User.club_id != None).all()
     for user in users:

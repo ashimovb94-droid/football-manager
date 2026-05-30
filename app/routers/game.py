@@ -144,3 +144,14 @@ def get_game_state(data: TokenData, db: Session = Depends(get_db)):
         "season_complete": season_complete,
         "transfer_window_open": transfer_window,
     }
+
+@router.post("/career")
+def get_career(data: TokenData, db: Session = Depends(get_db)):
+    user_id = verify_token(data.token)
+    if not user_id:
+        return []
+    from sqlalchemy import text
+    rows = db.execute(text(
+        f"SELECT * FROM career_history WHERE user_id = {user_id} ORDER BY season_number DESC"
+    )).fetchall()
+    return [dict(r._mapping) for r in rows]
