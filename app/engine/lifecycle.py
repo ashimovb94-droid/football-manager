@@ -313,6 +313,17 @@ def _finish_league(db, season, league):
     
     db.commit()
     
+    # Сбрасываем выставленных игроков
+    from app.models.player import Player
+    db.query(Player).filter(Player.transfer_listed == True).update({
+        'transfer_listed': False,
+        'asking_price': None
+    })
+    # Сбрасываем предложения
+    db.execute(text("UPDATE transfer_offers SET status = 'expired' WHERE status = 'pending'"))
+    db.commit()
+    print('[LIFECYCLE] Transfer listings reset')
+
     # Стартуем новую предсезонку
     _start_new_preseason(db)
 
