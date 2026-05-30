@@ -6,14 +6,19 @@ from datetime import datetime, timedelta
 
 db = SessionLocal()
 
-# Удаляем старый сезон
+# Завершаем старый сезон
+old_season = db.query(Season).filter(Season.status == 'active').first()
+old_number = old_season.number if old_season else 0
+if old_season:
+    old_season.status = 'finished'
+    db.commit()
+
 db.query(Match).delete()
 db.query(Standing).delete()
-db.query(Season).delete()
 db.commit()
 
-# Создаём сезон
-season = Season(number=1, league='championship', status='active')
+# Создаём новый сезон
+season = Season(number=old_number + 1, league='championship', status='active')
 db.add(season)
 db.commit()
 db.refresh(season)
