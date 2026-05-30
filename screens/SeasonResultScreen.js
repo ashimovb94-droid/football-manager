@@ -64,6 +64,7 @@ export default function SeasonResultScreen({ route }) {
   }, []);
 
   const myResult = results?.standings?.find(s => Number(s.club_id) === Number(myClubId || club?.id));
+  const cupResult = pendingResults?.cup_result;
   const myPos = myResult?.position;
   const zone = myPos ? getZone(myPos, league || 'epl') : null;
 
@@ -121,6 +122,27 @@ export default function SeasonResultScreen({ route }) {
           )}
         </Animated.View>
 
+        {/* Кубок */}
+        {cupResult && (
+          <View style={[s.cupCard, { borderColor: cupResult.type === 'winner' ? '#ffd700' : '#8888aa' }]}>
+            <Ionicons
+              name={cupResult.type === 'winner' ? 'trophy' : 'medal-outline'}
+              size={36}
+              color={cupResult.type === 'winner' ? '#ffd700' : '#8888aa'}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={[s.cupTitle, { color: cupResult.type === 'winner' ? '#ffd700' : '#fff' }]}>
+                {cupResult.type === 'winner' ? '🏆 ОБЛАДАТЕЛЬ КУБКА АНГЛИИ!' : 'ФИНАЛИСТ КУБКА'}
+              </Text>
+              <Text style={s.cupSub}>
+                {cupResult.type === 'winner'
+                  ? `Финал: ${cupResult.club_name} ${cupResult.score} ${cupResult.opponent}`
+                  : `Проигран финал: ${cupResult.score} против ${cupResult.opponent}`}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Таблица */}
         <Text style={s.sectionTitle}>ИТОГОВАЯ ТАБЛИЦА</Text>
         {results?.standings?.map((item) => {
@@ -168,6 +190,9 @@ const s = StyleSheet.create({
   clubName:     { flex: 1, fontSize: 12, color: '#fff', fontWeight: '600' },
   played:       { fontSize: 11, color: '#8888aa', width: 22, textAlign: 'center' },
   pts:          { fontSize: 14, color: '#00d4ff', fontWeight: '900', width: 28, textAlign: 'right' },
+  cupCard:      { backgroundColor: '#12121a', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5 },
+  cupTitle:     { fontSize: 14, fontWeight: '900', letterSpacing: 1 },
+  cupSub:       { fontSize: 11, color: '#8888aa', marginTop: 4 },
   btn:          { marginTop: 16, borderRadius: 14, padding: 18, alignItems: 'center', borderWidth: 2 },
   btnText:      { fontWeight: '900', fontSize: 15, letterSpacing: 2 },
 });

@@ -22,6 +22,16 @@ export default function SplashScreen({ navigation }) {
         if (user && !user.detail) {
           if (user.club_id && user.club) {
             await saveManagerData(user.club, user.manager_name);
+            // Проверяем незакрытые итоги кубка
+            try {
+              console.log('Checking pending cup...');
+              const cup = await api.getPendingCup(session.token);
+              console.log('Cup result:', JSON.stringify(cup));
+              if (cup && cup.type) {
+                navigation.replace('CupResult', { cupResult: cup });
+                return;
+              }
+            } catch(e) {}
             // Проверяем незакрытые итоги сезона
             try {
               const pending = await api.getPendingResults(session.token);

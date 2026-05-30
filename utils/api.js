@@ -193,6 +193,20 @@ export const api = {
     });
     return res.json();
   },
+  getPendingCup: async (token) => {
+    const res = await fetch(`${BASE_URL}/game/pending-cup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
+  clearPendingCup: async (token) => {
+    const res = await fetch(`${BASE_URL}/game/clear-cup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
   getPendingResults: async (token) => {
     const res = await fetch(`${BASE_URL}/game/pending-results`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
