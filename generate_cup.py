@@ -22,15 +22,16 @@ ROUND_DATES = {
     4: '2026-03-21', 5: '2026-04-18', 6: '2026-05-16'
 }
 
-# Берём все клубы АПЛ + Чемпионшип = 44 клуба
-# Округляем до 32 — берём топ-32 по рейтингу
-clubs = db.query(Club).order_by(Club.rating.desc()).limit(32).all()
+# Все 44 клуба участвуют — 4 получают bye (проходят автоматом)
+# 44 = 22 матча в 1/32 + 22 победителя = к 1/16 добавляем 10 bye = 32
+clubs = db.query(Club).filter(Club.league.in_(['epl','championship','league1'])).all()
 club_ids = [c.id for c in clubs]
 random.shuffle(club_ids)
 
-# Генерируем 1/32 финала (16 матчей)
+# 44 клуба → 22 матча в первом раунде
+ROUND_NAMES[1] = '1/32'
 pos = 0
-for i in range(0, 32, 2):
+for i in range(0, len(club_ids), 2):
     db.add(CupMatch(
         season_id=season.id,
         round=1,
