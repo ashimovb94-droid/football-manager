@@ -144,6 +144,7 @@ def get_game_state(data: TokenData, db: Session = Depends(get_db)):
         "season_complete": season_complete,
         "transfer_window_open": transfer_window,
         "game_year": 2025 + (user.season or 1),
+        "cup_winner": _get_cup_winner(db, season),
         "season_label": f"{2024 + (user.season or 1)}/{2025 + (user.season or 1)}",
     }
 
@@ -200,3 +201,27 @@ def clear_pending_cup(data: TokenData, db: Session = Depends(get_db)):
     db.execute(text(f"UPDATE users SET pending_cup = NULL WHERE id = {user_id}"))
     db.commit()
     return {"ok": True}
+
+def _get_cup_winner(db, season):
+    if not season: return None
+    from app.models.cup import CupMatch
+    from app.models.season import Season
+    # Сначала ищем в текущем сезоне
+    final = db.query(CupMatch).filter(
+        CupMatch.season_id == season.id,
+        CupMatch.round == 6,
+        CupMatch.status == 'finished'
+    ).first()
+    # Если нет - берём из предыдущего сезона
+    if not final:
+        prev = db.query(Season).filter(Season.status == 'finished').order_by(Season.id.desc()).first()
+        if prev:
+            final = db.query(CupMatch).filter(
+                CupMatch.season_id == prev.id,
+                CupMatch.round == 6,
+                CupMatch.status == 'finished'
+            ).first()
+    if not final or not final.winner_id: return None
+    from app.models.club import Club
+    club = db.query(Club).filter(Club.id == final.winner_id).first()
+    return club.name if club else None

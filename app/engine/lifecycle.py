@@ -33,7 +33,12 @@ def run():
             db.close()
             return
         
-        # === СЕЗОН ===
+        # Жеребьёвка кубка — за 24 часа до сезона
+    hours_left = (season_start - now).total_seconds() / 3600
+    if 23 <= hours_left <= 25:
+        _cup_draw_news(db)
+
+    # === СЕЗОН ===
         season = db.query(Season).filter(Season.status == 'active').first()
         if not season:
             print("[LIFECYCLE] No active season - creating...")
@@ -118,6 +123,46 @@ def _check_transfer_window(db, now):
             create_news(db, u.club_id, "transfer_window",
                 "Январское окно открыто до 31 января.",
                 "snow-outline")
+
+def _cup_draw_news(db):
+    from app.utils.news_helper import create_news
+    from app.models.cup import CupMatch
+    from app.models.season import Season
+    from app.models.user import User
+    from app.models.club import Club
+    import random
+
+    season = db.query(Season).filter(Season.status == "active").first()
+    if not season: return
+
+    # Проверяем нет ли уже новости
+    from sqlalchemy import text
+    existing = db.execute(text(
+        "SELECT id FROM news WHERE type = 'cup_draw' LIMIT 1"
+    )).fetchone()
+    if existing: return
+
+    matches = db.query(CupMatch).filter(
+        CupMatch.season_id == season.id,
+        CupMatch.round == 1
+    ).limit(4).all()
+
+    if not matches: return
+
+    examples = []
+    for m in matches:
+        home = db.query(Club).filter(Club.id == m.home_id).first()
+        away = db.query(Club).filter(Club.id == m.away_id).first()
+        if home and away:
+            examples.append(f"{home.name} vs {away.name}")
+
+    text_body = "Проведена жеребьёвка Кубка Англии. Матчи 1/32: " + ", ".join(examples[:3])
+
+    users = db.query(User).filter(User.club_id != None).all()
+    for user in users:
+        create_news(db, user.club_id, "cup_draw",
+            text_body,
+            "git-branch-outline")
 
 def _recover_fatigue(db):
     """Восстанавливает усталость игроков на 2 единицы каждый час"""
