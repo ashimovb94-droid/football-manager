@@ -186,6 +186,13 @@ export const api = {
     });
     return res.json();
   },
+  getCareer: async (token) => {
+    const res = await fetch(`${BASE_URL}/game/career`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
   getGameState: async (token) => {
     const res = await fetch(`${BASE_URL}/game/state`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

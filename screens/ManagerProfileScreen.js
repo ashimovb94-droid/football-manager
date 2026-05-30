@@ -15,6 +15,7 @@ export default function ManagerProfileScreen() {
 
   const [standing, setStanding] = useState(null);
   const [managerRating, setManagerRating] = useState(50);
+  const [career, setCareer] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -23,6 +24,8 @@ export default function ManagerProfileScreen() {
       setClub(club);
       setManagerName(managerName);
       if (token) {
+          const careerData = await api.getCareer(token);
+          if (careerData?.length) setCareer(careerData);
         const user = await api.getMe(token);
         if (user) setManagerRating(user.rating || 50);
         if (club) {
@@ -103,27 +106,17 @@ export default function ManagerProfileScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>ИСТОРИЯ КАРЬЕРЫ</Text>
           <View style={s.historyCard}>
-            {standing ? (
-              <View style={{ gap: 8 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#8888aa', fontSize: 12 }}>Место в таблице</Text>
-                  <Text style={{ color: '#ffd700', fontWeight: '900', fontSize: 14 }}>#{standing.position}</Text>
+            {career.length > 0 ? career.map(c => (
+              <View key={c.id} style={{ backgroundColor: '#0a0a0f', borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#ffffff10' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ color: '#00d4ff', fontWeight: '900', fontSize: 12 }}>Сезон {c.season_number} · {c.league === 'epl' ? 'АПЛ' : 'Чемпионшип'}</Text>
+                  <Text style={{ color: '#ffd700', fontWeight: '900', fontSize: 14 }}>#{c.position}</Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#8888aa', fontSize: 12 }}>Очки</Text>
-                  <Text style={{ color: '#00d4ff', fontWeight: '900', fontSize: 14 }}>{standing.points}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#8888aa', fontSize: 12 }}>В/Н/П</Text>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{standing.won}/{standing.drawn}/{standing.lost}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#8888aa', fontSize: 12 }}>Голы</Text>
-                  <Text style={{ color: '#00ff88', fontWeight: '700', fontSize: 14 }}>{standing.gf}-{standing.ga}</Text>
-                </View>
+                <Text style={{ color: '#fff', fontSize: 12, marginBottom: 2 }}>{c.club_name}</Text>
+                <Text style={{ color: '#8888aa', fontSize: 11 }}>{c.points} очков · {c.won}П {c.drawn}Н {c.lost}П · {c.gf}-{c.ga}</Text>
               </View>
-            ) : (
-              <Text style={s.historyEmpty}>История матчей появится после первого сезона</Text>
+            )) : (
+              <Text style={s.historyEmpty}>История появится после первого сезона</Text>
             )}
           </View>
         </View>
