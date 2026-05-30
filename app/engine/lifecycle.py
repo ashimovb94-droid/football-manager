@@ -268,6 +268,10 @@ def _simulate_cup_matches(db, season, now):
         
         db.commit()
         print(f"[CUP] Simulated round {round_num}")
+        
+        # Если финал — сохраняем результат
+        if round_num == 6:
+            _save_cup_result(db, cup_season_id)
 
 def _advance_cup(match, season_id, db):
     if match.round >= 6: return
@@ -278,8 +282,8 @@ def _advance_cup(match, season_id, db):
         CupMatch.round == next_round,
         CupMatch.bracket_pos == next_pos,
     ).first()
-    ROUND_DATES = {2:'2026-01-31',3:'2026-02-21',4:'2026-04-18',5:'2026-05-16'}
-    ROUND_NAMES = {2:'1/8',3:'1/4',4:'1/2',5:'Финал'}
+    ROUND_DATES = {2:'2026-01-31',3:'2026-02-21',4:'2026-04-18',5:'2026-05-16',6:'2026-05-30'}
+    ROUND_NAMES = {2:'1/16',3:'1/8',4:'1/4',5:'1/2',6:'Финал'}
     if not next_match:
         next_match = CupMatch(
             season_id=season_id, round=next_round,
@@ -332,11 +336,12 @@ def _finish_league(db, season, league):
                 print(f"[RELEGATION] {club.name} from EPL")
     
     # Сохраняем историю карьеры
+    sorted_standings = sorted(standings, key=lambda s: (-(s.points), -(s.gf - s.ga)))
     users_all = db.query(User).filter(User.club_id != None).all()
     for user in users_all:
-        my_s = next((s for s in standings if s.club_id == user.club_id), None)
+        my_s = next((s for s in sorted_standings if s.club_id == user.club_id), None)
         if not my_s: continue
-        pos = [s.club_id for s in standings].index(user.club_id) + 1
+        pos = [s.club_id for s in sorted_standings].index(user.club_id) + 1
         club = db.query(Club).filter(Club.id == user.club_id).first()
         db.execute(text(
             "INSERT INTO career_history (user_id, season_number, club_id, club_name, league, position, points, won, drawn, lost, gf, ga) "
@@ -430,3 +435,57 @@ def _start_new_preseason(db):
 
 if __name__ == '__main__':
     run()
+
+def _save_cup_result(db, season_id):
+    """Сохраняет результат кубка и уведомляет игроков"""
+    import json
+    from app.utils.news_helper import create_news
+    
+    final = db.query(CupMatch).filter(
+        CupMatch.season_id == season_id,
+        CupMatch.round == 6,
+        CupMatch.status == 'finished'
+    ).first()
+    
+    if not final or not final.winner_id:
+        return
+    
+    winner_club = db.query(Club).filter(Club.id == final.winner_id).first()
+    loser_id = final.away_id if final.winner_id == final.home_id else final.home_id
+    loser_club = db.query(Club).filter(Club.id == loser_id).first()
+    
+    print(f"[CUP WINNER] {winner_club.name} wins the cup!")
+    
+    users = db.query(User).filter(User.club_id != None).all()
+    for user in users:
+        if user.club_id == final.winner_id:
+            cup_data = {
+                'type': 'winner',
+                'club_name': winner_club.name,
+                'score': f"{final.home_score}-{final.away_score}",
+                'opponent': loser_club.name if loser_club else '?',
+            }
+            db.execute(text(f"UPDATE users SET pending_cup = :r WHERE id = {user.id}"), {'r': json.dumps(cup_data)})
+            create_news(db, user.club_id, 'cup',
+                f"{winner_club.name} — ОБЛАДАТЕЛЬ КУБКА!",
+                f"Финал: {winner_club.name} {final.home_score}-{final.away_score} {loser_club.name if loser_club else '?'}",
+                'trophy-outline')
+        elif user.club_id == loser_id:
+            cup_data = {
+                'type': 'finalist',
+                'club_name': loser_club.name if loser_club else '?',
+                'score': f"{final.home_score}-{final.away_score}",
+                'opponent': winner_club.name,
+            }
+            db.execute(text(f"UPDATE users SET pending_cup = :r WHERE id = {user.id}"), {'r': json.dumps(cup_data)})
+            create_news(db, user.club_id, 'cup',
+                f"Финал кубка — поражение",
+                f"{winner_club.name} выиграл кубок. Счёт: {final.home_score}-{final.away_score}",
+                'medal-outline')
+        else:
+            create_news(db, user.club_id, 'cup',
+                f"{winner_club.name} — обладатель Кубка Англии!",
+                f"Финал: {winner_club.name} {final.home_score}-{final.away_score} {loser_club.name if loser_club else '?'}",
+                'trophy-outline')
+    
+    db.commit()

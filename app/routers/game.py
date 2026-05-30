@@ -177,3 +177,24 @@ def clear_pending_results(data: TokenData, db: Session = Depends(get_db)):
     db.execute(text(f"UPDATE users SET pending_results = NULL WHERE id = {user_id}"))
     db.commit()
     return {"ok": True}
+
+@router.post("/pending-cup")
+def get_pending_cup(data: TokenData, db: Session = Depends(get_db)):
+    user_id = verify_token(data.token)
+    if not user_id:
+        return None
+    from sqlalchemy import text
+    row = db.execute(text(f"SELECT pending_cup FROM users WHERE id = {user_id}")).fetchone()
+    if row and row.pending_cup:
+        return row.pending_cup
+    return None
+
+@router.post("/clear-cup")
+def clear_pending_cup(data: TokenData, db: Session = Depends(get_db)):
+    user_id = verify_token(data.token)
+    if not user_id:
+        return {"ok": False}
+    from sqlalchemy import text
+    db.execute(text(f"UPDATE users SET pending_cup = NULL WHERE id = {user_id}"))
+    db.commit()
+    return {"ok": True}

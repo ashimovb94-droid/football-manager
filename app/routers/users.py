@@ -49,7 +49,7 @@ def user_response(user, db):
             "league": club.league, "primary": club.primary,
             "secondary": club.secondary, "budget": club.budget,
             "rating": club.rating, "min_rating": club.min_rating,
-            "goal": club.goal, "expectations": club.expectations,
+
         } if club else None
     }
 
