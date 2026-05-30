@@ -6,7 +6,7 @@ import ClubBadge from '../components/ClubBadge';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ROUND_NAMES = { 1: '1/16', 2: '1/8', 3: '1/4', 4: '1/2', 5: 'ФИНАЛ' };
+const ROUND_NAMES = { 1: '1/32', 2: '1/16', 3: '1/8', 4: '1/4', 5: '1/2', 6: 'ФИНАЛ' };
 const ROUND_COLORS = { 1: '#8888aa', 2: '#00d4ff', 3: '#7b2fff', 4: '#ff6b35', 5: '#ffd700', 6: '#00ff88' };
 
 export default function CupScreen() {
@@ -34,7 +34,7 @@ export default function CupScreen() {
     setLoading(false);
   };
 
-  const rounds = [...new Set(bracket.map(m => m.round))].sort();
+  const rounds = [1, 2, 3, 4, 5, 6];
   const roundMatches = bracket.filter(m => m.round === activeRound);
   const myClubId = club?.id ? Number(club.id) : null;
 
