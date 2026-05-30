@@ -41,6 +41,9 @@ def run():
             db.close()
             return
         
+        # Восстановление усталости игроков каждый час
+        _recover_fatigue(db)
+
         # Трансферы ботов
         _bot_transfers(db)
         
@@ -75,6 +78,14 @@ def run():
         traceback.print_exc()
     finally:
         db.close()
+
+def _recover_fatigue(db):
+    """Восстанавливает усталость игроков на 2 единицы каждый час"""
+    from app.models.player import Player
+    db.execute(text(
+        "UPDATE players SET fatigue = GREATEST(0, fatigue - 2) WHERE fatigue > 0"
+    ))
+    db.commit()
 
 def _bot_transfers(db):
     """Боты покупают/продают игроков"""
