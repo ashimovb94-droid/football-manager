@@ -5,14 +5,27 @@ import { saveManagerData, loadSession } from '../utils/storage';
 import { buildAutoLineup } from '../utils/autoLineup';
 import ClubBadge from '../components/ClubBadge';
 
-const MANAGER_RATING = 50;
+
 
 export default function ClubSelectScreen({ navigation, route }) {
   const { managerName } = route.params;
   const [tab, setTab] = useState('championship');
+  const [managerRating, setManagerRating] = useState(50);
+  const [managerSeason, setManagerSeason] = useState(1);
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    loadSession().then(({ token }) => {
+      if (token) api.getMe(token).then(u => {
+        if (u) {
+          setManagerRating(u.rating || 50);
+          setManagerSeason(u.season || 1);
+        }
+      });
+    });
+  }, []);
 
   useEffect(() => { loadClubs(); }, [tab]);
 
@@ -26,7 +39,7 @@ export default function ClubSelectScreen({ navigation, route }) {
   };
 
   const handlePress = (club) => {
-    if (tab === 'epl' && MANAGER_RATING < club.min_rating) {
+    if (tab === 'epl' && (managerSeason < 2 || managerRating < club.min_rating)) {
       setSelected({ ...club, locked: true });
     } else {
       setSelected({ ...club, locked: false });
@@ -61,7 +74,7 @@ export default function ClubSelectScreen({ navigation, route }) {
     <View style={s.screen}>
       <View style={s.header}>
         <Text style={s.title}>ВЫБЕРИ КЛУБ</Text>
-        <Text style={s.sub}>СЕЗОН 2025/26 · РЕЙТИНГ: {MANAGER_RATING}</Text>
+        <Text style={s.sub}>СЕЗОН {managerSeason} · РЕЙТИНГ: {managerRating}</Text>
       </View>
       <View style={s.tabs}>
         <TouchableOpacity style={[s.tab, tab === 'championship' && s.tabActive]} onPress={() => setTab('championship')}>
@@ -75,7 +88,7 @@ export default function ClubSelectScreen({ navigation, route }) {
         data={clubs}
         keyExtractor={i => String(i.id)}
         renderItem={({ item }) => {
-          const locked = tab === 'epl' && MANAGER_RATING < item.min_rating;
+          const locked = tab === 'epl' && (managerSeason < 2 || managerRating < item.min_rating);
           return (
             <TouchableOpacity style={[s.card, locked && s.cardLocked]} onPress={() => handlePress(item)}>
               <ClubBadge club={{...item, id: String(item.id)}} size={52} />
@@ -100,8 +113,8 @@ export default function ClubSelectScreen({ navigation, route }) {
               <>
                 <Text style={s.modalLockIcon}>🔒</Text>
                 <Text style={s.modalTitle}>НЕДОСТУПНО</Text>
-                <Text style={s.modalSub}>Для {selected?.name} нужен рейтинг {selected?.min_rating}+</Text>
-                <Text style={s.modalHint}>Ваш рейтинг: {MANAGER_RATING}</Text>
+                <Text style={s.modalSub}>{managerSeason < 2 ? 'АПЛ доступна со 2-го сезона' : `Для ${selected?.name} нужен рейтинг ${selected?.min_rating}+`}</Text>
+                <Text style={s.modalHint}>{managerSeason < 2 ? 'Сначала проведи сезон в Чемпионшипе' : `Ваш рейтинг: ${managerRating}`}</Text>
                 <TouchableOpacity style={s.btnClose} onPress={() => setSelected(null)}>
                   <Text style={s.btnCloseText}>ПОНЯТНО</Text>
                 </TouchableOpacity>
