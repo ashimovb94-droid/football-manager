@@ -143,6 +143,8 @@ def get_game_state(data: TokenData, db: Session = Depends(get_db)):
         "standing": standing,
         "season_complete": season_complete,
         "transfer_window_open": transfer_window,
+        "game_year": 2025 + (user.season or 1),
+        "season_label": f"{2024 + (user.season or 1)}/{2025 + (user.season or 1)}",
     }
 
 @router.post("/career")
