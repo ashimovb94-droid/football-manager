@@ -75,6 +75,10 @@ export const api = {
     const res = await fetch(`${BASE_URL}/season/matches/${league}/${round}`);
     return res.json();
   },
+  getSeasonResults: async (league) => {
+    const res = await fetch(`${BASE_URL}/season/results/${league}`);
+    return res.json();
+  },
   getCurrentRound: async (league) => {
     const res = await fetch(`${BASE_URL}/season/current-round/${league}`);
     return res.json();
@@ -179,6 +183,13 @@ export const api = {
     const res = await fetch(`${BASE_URL}/training/individual`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, player_id, focus }),
+    });
+    return res.json();
+  },
+  getGameState: async (token) => {
+    const res = await fetch(`${BASE_URL}/game/state`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
     });
     return res.json();
   },

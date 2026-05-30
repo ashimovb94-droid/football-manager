@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { clearSession } from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loadManagerData, loadSession } from '../utils/storage';
+import { api } from '../utils/api';
 import { useState, useEffect } from 'react';
 import ClubBadge from '../components/ClubBadge';
 
@@ -12,11 +13,28 @@ export default function ManagerProfileScreen() {
   const [club, setClub] = useState(null);
   const [managerName, setManagerName] = useState(null);
 
+  const [standing, setStanding] = useState(null);
+  const [managerRating, setManagerRating] = useState(50);
+
   useEffect(() => {
-    loadManagerData().then(({ club, managerName }) => {
+    const load = async () => {
+      const { token } = await loadSession();
+      const { club, managerName } = await loadManagerData();
       setClub(club);
       setManagerName(managerName);
-    });
+      if (token) {
+        const user = await api.getMe(token);
+        if (user) setManagerRating(user.rating || 50);
+        if (club) {
+          const results = await api.getSeasonResults(club.league || 'championship');
+          if (results?.standings) {
+            const s = results.standings.find(s => Number(s.club_id) === Number(club.id));
+            if (s) setStanding(s);
+          }
+        }
+      }
+    };
+    load();
   }, []);
 
   const handleLogout = () => {
@@ -58,7 +76,7 @@ export default function ManagerProfileScreen() {
             <Text style={s.managerTitle}>ГЛАВНЫЙ ТРЕНЕР</Text>
           </View>
           <View style={s.ratingBox}>
-            <Text style={s.ratingVal}>50</Text>
+            <Text style={s.ratingVal}>{managerRating}</Text>
             <Text style={s.ratingLabel}>РЕЙТИНГ</Text>
           </View>
         </View>
@@ -85,7 +103,28 @@ export default function ManagerProfileScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>ИСТОРИЯ КАРЬЕРЫ</Text>
           <View style={s.historyCard}>
-            <Text style={s.historyEmpty}>История матчей появится после первого сезона</Text>
+            {standing ? (
+              <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ color: '#8888aa', fontSize: 12 }}>Место в таблице</Text>
+                  <Text style={{ color: '#ffd700', fontWeight: '900', fontSize: 14 }}>#{standing.position}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ color: '#8888aa', fontSize: 12 }}>Очки</Text>
+                  <Text style={{ color: '#00d4ff', fontWeight: '900', fontSize: 14 }}>{standing.points}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ color: '#8888aa', fontSize: 12 }}>В/Н/П</Text>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{standing.won}/{standing.drawn}/{standing.lost}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ color: '#8888aa', fontSize: 12 }}>Голы</Text>
+                  <Text style={{ color: '#00ff88', fontWeight: '700', fontSize: 14 }}>{standing.gf}-{standing.ga}</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={s.historyEmpty}>История матчей появится после первого сезона</Text>
+            )}
           </View>
         </View>
 

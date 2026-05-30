@@ -16,6 +16,7 @@ import PreseasonScreen from './screens/PreseasonScreen';
 import ManagerProfileScreen from './screens/ManagerProfileScreen';
 import CupScreen from './screens/CupScreen';
 import TrainingScreen from './screens/TrainingScreen';
+import SeasonResultScreen from './screens/SeasonResultScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -78,6 +79,7 @@ export default function App() {
         <Stack.Screen name="Preseason"      component={PreseasonScreen} />
         <Stack.Screen name="ManagerProfile" component={ManagerProfileScreen} />
         <Stack.Screen name="Training"       component={TrainingScreen} />
+        <Stack.Screen name="SeasonResult"   component={SeasonResultScreen} />
         <Stack.Screen name="Tactics"        component={TacticsScreen} />
       </Stack.Navigator>
     </NavigationContainer>

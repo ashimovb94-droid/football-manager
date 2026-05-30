@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { loadManagerData, loadSession } from '../utils/storage';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '../utils/api';
 import ClubBadge from '../components/ClubBadge';
 import LeagueBadge from '../components/LeagueBadge';
@@ -46,11 +47,15 @@ export default function SeasonScreen() {
   const [club, setClub] = useState(null);
   const [token, setToken] = useState(null);
   const [preseasonDone, setPreseasonDone] = useState(false);
+  const [seasonComplete, setSeasonComplete] = useState(false);
   const navigation = useNavigation();
 
   useEffect(() => {
     loadSession().then(({ token }) => setToken(token));
     api.getPreseasonStatus().then(s => setPreseasonDone(s?.season_started || false));
+    api.getSeasonResults(club?.league || 'championship').then(r => {
+      if (r?.is_complete) setSeasonComplete(true);
+    });
     loadManagerData().then(({ club }) => {
       setClub(club);
       const lg = club?.league || 'championship';
@@ -113,6 +118,20 @@ export default function SeasonScreen() {
         </View>
         <Text style={s.sub}>ТУР {round}</Text>
       </View>
+
+      {seasonComplete && (
+        <TouchableOpacity
+          style={{ backgroundColor: '#ffd70020', borderWidth: 1, borderColor: '#ffd700', borderRadius: 12, margin: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+          onPress={() => navigation.navigate('SeasonResult', { league, myClubId: club?.id })}
+        >
+          <Ionicons name="trophy-outline" size={24} color="#ffd700" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#ffd700', fontWeight: '900', fontSize: 14, letterSpacing: 1 }}>СЕЗОН ЗАВЕРШЁН!</Text>
+            <Text style={{ color: '#8888aa', fontSize: 11, marginTop: 2 }}>Посмотреть итоги</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#ffd700" />
+        </TouchableOpacity>
+      )}
 
       <View style={s.tabs}>
         {[{ id: 'table', label: 'ТАБЛИЦА' }, { id: 'fixtures', label: 'МАТЧИ' }].map(t => (
