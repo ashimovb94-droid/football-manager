@@ -1,0 +1,294 @@
+"""
+Единый оркестратор жизненного цикла игры.
+Вызывается кроном каждый час.
+"""
+from datetime import datetime, timedelta
+from sqlalchemy import text
+from app.database import SessionLocal
+from app.models.season import Season, Match, Standing, PreseasonConfig, PreseasonResult
+from app.models.cup import CupMatch
+from app.models.club import Club
+from app.models.user import User
+from app.models.bot_manager import BotManager
+from app.engine.bot_engine import simulate_round
+from app.engine.match_engine import simulate_match
+import random
+
+def run():
+    db = SessionLocal()
+    try:
+        config = db.query(PreseasonConfig).filter(PreseasonConfig.status == 'active').first()
+        
+        if not config:
+            print("[LIFECYCLE] No active preseason config")
+            db.close()
+            return
+        
+        now = datetime.utcnow()
+        season_start = datetime.fromisoformat(config.season_start)
+        
+        # === ПРЕДСЕЗОНКА ===
+        if now < season_start:
+            _handle_preseason(db, config, now)
+            db.close()
+            return
+        
+        # === СЕЗОН ===
+        season = db.query(Season).filter(Season.status == 'active').first()
+        if not season:
+            print("[LIFECYCLE] No active season - creating...")
+            _start_new_season(db, config)
+            db.close()
+            return
+        
+        # Симулируем матчи чья дата наступила
+        _simulate_due_matches(db, season, now)
+        
+        # Симулируем кубок
+        _simulate_cup_matches(db, season, now)
+        
+        # Проверяем завершён ли сезон
+        for league in ['championship', 'epl']:
+            remaining = db.query(Match).filter(
+                Match.season_id == season.id,
+                Match.league == league,
+                Match.status == 'scheduled'
+            ).count()
+            
+            if remaining == 0:
+                total = db.query(Match).filter(
+                    Match.season_id == season.id,
+                    Match.league == league
+                ).count()
+                if total > 0:
+                    print(f"[LIFECYCLE] {league} season complete!")
+                    _finish_league(db, season, league)
+        
+        db.commit()
+        
+    except Exception as e:
+        print(f"[LIFECYCLE ERROR] {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        db.close()
+
+def _handle_preseason(db, config, now):
+    """Симулирует несыгранные товарняки прошедших дней"""
+    start = datetime.fromisoformat(config.start_date)
+    elapsed_hours = (now - start).total_seconds() / 3600
+    finished_days = [d for d in [1, 2, 3] if elapsed_hours >= d * 24]
+    
+    OPPONENTS = [
+        {"day": 1, "match": 1, "opponent_id": 14},
+        {"day": 1, "match": 2, "opponent_id": 15},
+        {"day": 2, "match": 1, "opponent_id": 17},
+        {"day": 2, "match": 2, "opponent_id": 18},
+        {"day": 3, "match": 1, "opponent_id": 19},
+        {"day": 3, "match": 2, "opponent_id": 20},
+    ]
+    
+    users = db.query(User).filter(User.club_id != None).all()
+    simulated = 0
+    
+    for user in users:
+        for opp in OPPONENTS:
+            if opp['day'] not in finished_days:
+                continue
+            existing = db.query(PreseasonResult).filter(
+                PreseasonResult.user_id == user.id,
+                PreseasonResult.day == opp['day'],
+                PreseasonResult.match_num == opp['match'],
+            ).first()
+            if not existing:
+                result = simulate_match(
+                    home_id=user.club_id,
+                    away_id=opp['opponent_id'],
+                    is_friendly=True,
+                )
+                db.add(PreseasonResult(
+                    user_id=user.id,
+                    day=opp['day'],
+                    match_num=opp['match'],
+                    home_score=result['home_score'],
+                    away_score=result['away_score'],
+                ))
+                simulated += 1
+    
+    if simulated:
+        db.commit()
+        print(f"[PRESEASON] Auto-simulated {simulated} friendlies")
+
+def _simulate_due_matches(db, season, now):
+    """Симулирует матчи лиги чья дата наступила"""
+    today = now.strftime('%Y-%m-%d')
+    
+    due_rounds = db.execute(text(
+        f"SELECT DISTINCT league, round FROM matches "
+        f"WHERE season_id = {season.id} AND status = 'scheduled' AND date <= '{today}' "
+        f"ORDER BY league, round"
+    )).fetchall()
+    
+    for row in due_rounds:
+        league, round_num = row.league, row.round
+        simulated = simulate_round(league, round_num)
+        if simulated > 0:
+            print(f"[SEASON] Simulated {simulated} matches - {league} round {round_num}")
+
+def _simulate_cup_matches(db, season, now):
+    """Симулирует матчи кубка чья дата наступила"""
+    today = now.strftime('%Y-%m-%d')
+    
+    due_rounds = db.execute(text(
+        f"SELECT DISTINCT round FROM cup_matches "
+        f"WHERE season_id = {season.id} AND status = 'scheduled' "
+        f"AND home_id IS NOT NULL AND away_id IS NOT NULL "
+        f"AND date <= '{today}' ORDER BY round"
+    )).fetchall()
+    
+    for row in due_rounds:
+        round_num = row.round
+        from app.routers.cup import simulate_cup_round
+        # Вызываем напрямую
+        matches = db.query(CupMatch).filter(
+            CupMatch.season_id == season.id,
+            CupMatch.round == round_num,
+            CupMatch.status == 'scheduled',
+            CupMatch.home_id != None,
+            CupMatch.away_id != None,
+        ).all()
+        
+        from app.models.bot_manager import BotManager
+        from app.engine.bot_engine import get_bot_lineup
+        import random as rnd
+        
+        for match in matches:
+            home_bot = db.query(BotManager).filter(BotManager.club_id == match.home_id).first()
+            away_bot = db.query(BotManager).filter(BotManager.club_id == match.away_id).first()
+            result = simulate_match(
+                home_id=match.home_id, away_id=match.away_id,
+                home_lineup=get_bot_lineup(match.home_id, home_bot.formation if home_bot else '4-3-3', db),
+                away_lineup=get_bot_lineup(match.away_id, away_bot.formation if away_bot else '4-3-3', db),
+            )
+            match.home_score = result['home_score']
+            match.away_score = result['away_score']
+            match.status = 'finished'
+            if result['home_score'] > result['away_score']:
+                match.winner_id = match.home_id
+            elif result['home_score'] < result['away_score']:
+                match.winner_id = match.away_id
+            else:
+                match.winner_id = rnd.choice([match.home_id, match.away_id])
+            
+            # Продвигаем победителя
+            _advance_cup(match, season.id, db)
+        
+        db.commit()
+        print(f"[CUP] Simulated round {round_num}")
+
+def _advance_cup(match, season_id, db):
+    if match.round >= 5: return
+    next_round = match.round + 1
+    next_pos = match.bracket_pos // 2
+    next_match = db.query(CupMatch).filter(
+        CupMatch.season_id == season_id,
+        CupMatch.round == next_round,
+        CupMatch.bracket_pos == next_pos,
+    ).first()
+    ROUND_DATES = {2:'2026-01-31',3:'2026-02-21',4:'2026-04-18',5:'2026-05-16'}
+    ROUND_NAMES = {2:'1/8',3:'1/4',4:'1/2',5:'Финал'}
+    if not next_match:
+        next_match = CupMatch(
+            season_id=season_id, round=next_round,
+            round_name=ROUND_NAMES[next_round],
+            status='scheduled', date=ROUND_DATES[next_round],
+            bracket_pos=next_pos,
+        )
+        db.add(next_match)
+        db.flush()
+    if match.bracket_pos % 2 == 0:
+        next_match.home_id = match.winner_id
+    else:
+        next_match.away_id = match.winner_id
+    db.commit()
+
+def _finish_league(db, season, league):
+    """Завершает лигу: повышение/вылет, обновление рейтингов"""
+    standings = db.query(Standing).filter(
+        Standing.season_id == season.id,
+        Standing.league == league
+    ).order_by(Standing.points.desc()).all()
+    
+    if not standings:
+        return
+    
+    # Повышение/вылет клубов
+    if league == 'championship':
+        for i, s in enumerate(standings):
+            club = db.query(Club).filter(Club.id == s.club_id).first()
+            if not club: continue
+            if i < 2:  # Авто повышение
+                club.league = 'epl'
+                print(f"[PROMOTION] {club.name} promoted to EPL!")
+            elif i >= len(standings) - 3:  # Вылет
+                club.league = 'league1'
+                print(f"[RELEGATION] {club.name} relegated!")
+    elif league == 'epl':
+        for i, s in enumerate(standings):
+            club = db.query(Club).filter(Club.id == s.club_id).first()
+            if not club: continue
+            if i >= len(standings) - 3:  # Вылет из АПЛ
+                club.league = 'championship'
+                print(f"[RELEGATION] {club.name} relegated from EPL!")
+    
+    # Обновляем рейтинг менеджеров
+    users = db.query(User).filter(User.club_id != None).all()
+    for user in users:
+        my_standing = next((s for s in standings if s.club_id == user.club_id), None)
+        if not my_standing: continue
+        pos = standings.index(my_standing) + 1
+        total = len(standings)
+        if pos <= 2:
+            user.rating = min(99, (user.rating or 50) + 10)
+        elif pos <= 6:
+            user.rating = min(99, (user.rating or 50) + 5)
+        elif pos >= total - 2:
+            user.rating = max(1, (user.rating or 50) - 5)
+        else:
+            user.rating = min(99, (user.rating or 50) + 2)
+        
+        # Следующий сезон
+        user.season = (user.season or 1) + 1
+    
+    db.commit()
+    
+    # Стартуем новую предсезонку
+    _start_new_preseason(db)
+
+def _start_new_season(db, config):
+    """Создаёт новый сезон"""
+    import subprocess
+    subprocess.run(['python3', 'generate_season.py'], cwd='/var/www/football-manager')
+    subprocess.run(['python3', 'generate_cup.py'], cwd='/var/www/football-manager')
+    print("[LIFECYCLE] New season generated!")
+
+def _start_new_preseason(db):
+    """Завершает текущую предсезонку и стартует новую через паузу"""
+    # Завершаем текущую
+    db.query(PreseasonConfig).update({'status': 'done'})
+    
+    # Новая предсезонка через 24 часа (пауза между сезонами)
+    now = datetime.utcnow()
+    new_start = now + timedelta(hours=24)
+    season_start = new_start + timedelta(hours=72)
+    
+    db.add(PreseasonConfig(
+        start_date=new_start.isoformat(),
+        season_start=season_start.isoformat(),
+        status='active'
+    ))
+    db.commit()
+    print("[LIFECYCLE] New preseason scheduled!")
+
+if __name__ == '__main__':
+    run()

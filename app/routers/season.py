@@ -77,3 +77,49 @@ def get_current_round(league: str, db: Session = Depends(get_db)):
         Match.status == 'scheduled',
     ).order_by(Match.round).first()
     return {"round": match.round if match else 1}
+
+@router.get("/results/{league}")
+def get_season_results(league: str, db: Session = Depends(get_db)):
+    season = db.query(Season).filter(Season.status == 'active').first()
+    if not season:
+        return None
+    
+    # Проверяем завершён ли сезон
+    total = db.query(Match).filter(
+        Match.season_id == season.id,
+        Match.league == league
+    ).count()
+    
+    finished = db.query(Match).filter(
+        Match.season_id == season.id,
+        Match.league == league,
+        Match.status == 'finished'
+    ).count()
+    
+    standings = db.query(Standing).filter(
+        Standing.season_id == season.id,
+        Standing.league == league
+    ).order_by(Standing.points.desc(), (Standing.gf - Standing.ga).desc()).all()
+    
+    result = []
+    for i, s in enumerate(standings):
+        club = db.query(Club).filter(Club.id == s.club_id).first()
+        result.append({
+            "position": i + 1,
+            "club_id": s.club_id,
+            "club_name": club.name if club else "?",
+            "played": s.played,
+            "won": s.won,
+            "drawn": s.drawn,
+            "lost": s.lost,
+            "gf": s.gf,
+            "ga": s.ga,
+            "points": s.points,
+        })
+    
+    return {
+        "total_matches": total,
+        "finished_matches": finished,
+        "is_complete": finished >= total,
+        "standings": result,
+    }
