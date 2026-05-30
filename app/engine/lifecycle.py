@@ -261,7 +261,14 @@ def _simulate_cup_matches(db, season, now):
             elif result['home_score'] < result['away_score']:
                 match.winner_id = match.away_id
             else:
-                match.winner_id = rnd.choice([match.home_id, match.away_id])
+                # Ничья — пенальти
+                ph = rnd.randint(3, 5)
+                pa = rnd.randint(3, 5)
+                while ph == pa:
+                    pa = rnd.randint(3, 5)
+                match.penalties_home = ph
+                match.penalties_away = pa
+                match.winner_id = match.home_id if ph > pa else match.away_id
             
             # Продвигаем победителя
             _advance_cup(match, season.id, db)
