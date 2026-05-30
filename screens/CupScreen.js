@@ -15,20 +15,30 @@ export default function CupScreen() {
   const [club, setClub] = useState(null);
   const [token, setToken] = useState(null);
   const [activeRound, setActiveRound] = useState(1);
+  const [seasonLabel, setSeasonLabel] = useState('');
+  const [cupWinner, setCupWinner] = useState(null);
+  const [isPreseason, setIsPreseason] = useState(false);
   const navigation = useNavigation();
 
-  useEffect(() => {
-    init();
-  }, []);
+  useEffect(() => { init(); }, []);
 
   const init = async () => {
     const { token } = await loadSession();
     const { club } = await loadManagerData();
     setToken(token);
     setClub(club);
+
+    if (token) {
+      try {
+        const state = await api.getGameState(token);
+        if (state?.season_label) setSeasonLabel(state.season_label);
+        if (state?.phase === 'preseason') setIsPreseason(true);
+        if (state?.cup_winner) setCupWinner(state.cup_winner);
+      } catch(e) {}
+    }
+
     const data = await api.getCupBracket();
     setBracket(data);
-    // Определяем активный раунд
     const scheduled = data.filter(m => m.status === 'scheduled');
     if (scheduled.length) setActiveRound(scheduled[0].round);
     setLoading(false);
@@ -62,28 +72,20 @@ export default function CupScreen() {
           }
         }}
       >
-        {/* Левая команда */}
         <View style={s.team}>
           {match.home ? (
             <>
               <ClubBadge club={{ id: String(match.home.id), primary: match.home.primary, secondary: '#fff', name: match.home.name }} size={32} />
-              <Text style={[s.teamName, mine && Number(match.home.id) === myClubId && s.teamNameMe]} numberOfLines={1}>
-                {match.home.name}
-              </Text>
+              <Text style={[s.teamName, mine && Number(match.home.id) === myClubId && s.teamNameMe]} numberOfLines={1}>{match.home.name}</Text>
             </>
-          ) : (
-            <Text style={s.tbd}>TBD</Text>
-          )}
+          ) : <Text style={s.tbd}>TBD</Text>}
         </View>
 
-        {/* Счёт */}
         <View style={s.scoreBox}>
           {finished ? (
             <>
               <Text style={s.score}>{match.home_score} - {match.away_score}</Text>
-              {match.penalties && (
-                <Text style={s.penalties}>пен. {match.penalties}</Text>
-              )}
+              {match.penalties && <Text style={s.penalties}>пен. {match.penalties}</Text>}
               {match.winner && <Text style={[s.winnerTag, { color }]}>✓</Text>}
             </>
           ) : (
@@ -92,95 +94,104 @@ export default function CupScreen() {
           <Text style={s.matchDate}>{match.date?.slice(5)}</Text>
         </View>
 
-        {/* Правая команда */}
         <View style={[s.team, s.teamRight]}>
           {match.away ? (
             <>
               <ClubBadge club={{ id: String(match.away.id), primary: match.away.primary, secondary: '#fff', name: match.away.name }} size={32} />
-              <Text style={[s.teamName, mine && Number(match.away.id) === myClubId && s.teamNameMe]} numberOfLines={1}>
-                {match.away.name}
-              </Text>
+              <Text style={[s.teamName, mine && Number(match.away.id) === myClubId && s.teamNameMe]} numberOfLines={1}>{match.away.name}</Text>
             </>
-          ) : (
-            <Text style={s.tbd}>TBD</Text>
-          )}
+          ) : <Text style={s.tbd}>TBD</Text>}
         </View>
       </TouchableOpacity>
     );
   };
 
   if (loading) {
-    return <View style={s.screen}><ActivityIndicator size="large" color="#ffd700" /></View>;
+    return <View style={s.screen}><ActivityIndicator size="large" color="#00d4ff" style={{ marginTop: 100 }} /></View>;
+  }
+
+  // Экран предсезонки
+  if (isPreseason) {
+    return (
+      <View style={s.screen}>
+        <View style={s.header}>
+          <Ionicons name="trophy-outline" size={28} color="#ffd700" />
+          <View>
+            <Text style={s.title}>КУБОК АНГЛИИ</Text>
+            <Text style={s.sub}>FA CUP · СЕЗОН {seasonLabel}</Text>
+          </View>
+        </View>
+        <View style={s.preseasonScreen}>
+          <Ionicons name="trophy" size={100} color="#ffd700" />
+          <Text style={s.preseasonLabel}>ОБЛАДАТЕЛЬ КУБКА</Text>
+          <Text style={s.preseasonWinner}>{cupWinner || '...'}</Text>
+          <Text style={s.preseasonSub}>Новый розыгрыш стартует вместе с сезоном</Text>
+        </View>
+      </View>
+    );
   }
 
   return (
     <View style={s.screen}>
-      {/* Шапка */}
       <View style={s.header}>
-        <Ionicons name='trophy-outline' size={40} color='#ffd700' />
+        <Ionicons name="trophy-outline" size={28} color="#ffd700" />
         <View>
           <Text style={s.title}>КУБОК АНГЛИИ</Text>
-          <Text style={s.sub}>FA CUP · СЕЗОН 2025/26</Text>
+          <Text style={s.sub}>FA CUP · СЕЗОН {seasonLabel}</Text>
         </View>
       </View>
 
-      {/* Раунды — закреплены */}
-      <View style={s.roundTabsWrapper}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.roundTabs}>
-          {rounds.map(r => (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.roundsBar} contentContainerStyle={s.roundsContent}>
+        {rounds.map(r => {
+          const hasMatches = bracket.some(m => m.round === r);
+          return (
             <TouchableOpacity
               key={r}
-              style={[s.roundTab, activeRound === r && { backgroundColor: ROUND_COLORS[r], borderColor: ROUND_COLORS[r] }]}
-              onPress={() => setActiveRound(r)}
+              style={[s.roundBtn, activeRound === r && s.roundBtnActive, !hasMatches && s.roundBtnDisabled]}
+              onPress={() => hasMatches && setActiveRound(r)}
             >
-              <Text style={[s.roundTabText, activeRound === r && s.roundTabTextActive]}>{ROUND_NAMES[r]}</Text>
+              <Text style={[s.roundText, activeRound === r && s.roundTextActive]}>{ROUND_NAMES[r]}</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+          );
+        })}
+      </ScrollView>
 
-      {/* Матчи раунда */}
-      <ScrollView contentContainerStyle={s.matchList}>
-        {roundMatches.length === 0 ? (
-          <View style={s.empty}>
-            <Text style={s.emptyText}>Матчи этого раунда ещё не определены</Text>
-          </View>
-        ) : (
-          roundMatches.map(renderMatch)
-        )}
+      <ScrollView contentContainerStyle={s.list}>
+        {roundMatches.map(renderMatch)}
       </ScrollView>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  screen:            { flex: 1, backgroundColor: '#0a0a0f' },
-  header:            { flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 56, paddingHorizontal: 24, paddingBottom: 12 },
-  cupEmoji:          { fontSize: 40 },
-  title:             { fontSize: 24, fontWeight: '900', color: '#ffd700', letterSpacing: 3 },
-  sub:               { fontSize: 11, color: '#8888aa', letterSpacing: 2, marginTop: 2 },
-  roundTabsWrapper:   { backgroundColor: '#0a0a0f', borderBottomWidth: 1, borderBottomColor: '#ffffff10' },
-  roundTabs:          { paddingHorizontal: 16, paddingVertical: 10, gap: 8, alignItems: 'center' },
-  roundTab:          { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: '#12121a', borderWidth: 1, borderColor: '#ffffff15', alignItems: 'center', justifyContent: 'center', height: 40 },
-  roundTabText:      { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 1 },
-  roundTabTextActive:{ color: '#000' },
-  matchList:         { padding: 12, gap: 8 },
-  matchCard:         { backgroundColor: '#12121a', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ffffff10' },
-  matchCardMe:       { borderColor: '#ffd70040', backgroundColor: '#ffd70008' },
-  matchCardFinished: { opacity: 0.8 },
-  team:              { flex: 1, alignItems: 'center', gap: 4 },
-  teamRight:         { alignItems: 'center' },
-  teamName:          { fontSize: 10, fontWeight: '600', color: '#fff', textAlign: 'center' },
-  teamNameMe:        { color: '#ffd700', fontWeight: '900' },
-  tbd:               { fontSize: 12, color: '#8888aa', fontStyle: 'italic' },
-  scoreBox:          { alignItems: 'center', paddingHorizontal: 8, minWidth: 60 },
-  score:             { fontSize: 18, fontWeight: '900', color: '#fff' },
-  winnerTag:         { fontSize: 10, fontWeight: '900', marginTop: 2 },
-  vs:                { fontSize: 14, fontWeight: '900', color: '#8888aa' },
-  playBtn:           { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  playBtnText:       { fontSize: 12, color: '#000', fontWeight: '900' },
-  matchDate:          { fontSize: 9, color: '#8888aa', marginTop: 3 },
-  penalties:          { fontSize: 9, color: '#ffd700', fontWeight: '700', marginTop: 1 },
-  empty:             { padding: 40, alignItems: 'center' },
-  emptyText:         { color: '#8888aa', fontSize: 13, textAlign: 'center' },
+  screen:             { flex: 1, backgroundColor: '#0a0a0f' },
+  header:             { paddingTop: 56, paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title:              { fontSize: 22, fontWeight: '900', color: '#ffd700', letterSpacing: 2 },
+  sub:                { fontSize: 10, color: '#8888aa', letterSpacing: 1 },
+  preseasonScreen:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 },
+  preseasonLabel:     { fontSize: 12, color: '#8888aa', letterSpacing: 3 },
+  preseasonWinner:    { fontSize: 28, fontWeight: '900', color: '#ffd700', textAlign: 'center' },
+  preseasonSub:       { fontSize: 13, color: '#8888aa', textAlign: 'center', lineHeight: 20 },
+  roundsBar:          { maxHeight: 48, borderBottomWidth: 1, borderBottomColor: '#ffffff10' },
+  roundsContent:      { paddingHorizontal: 16, gap: 8, alignItems: 'center', height: 48 },
+  roundBtn:           { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, backgroundColor: '#12121a', borderWidth: 1, borderColor: '#ffffff15' },
+  roundBtnActive:     { backgroundColor: '#ffd700', borderColor: '#ffd700' },
+  roundBtnDisabled:   { opacity: 0.3 },
+  roundText:          { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 1 },
+  roundTextActive:    { color: '#000' },
+  list:               { padding: 12, gap: 10 },
+  matchCard:          { backgroundColor: '#12121a', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ffffff10' },
+  matchCardMe:        { borderColor: '#ffd70050', backgroundColor: '#ffd70008' },
+  matchCardFinished:  { borderColor: '#ffffff20' },
+  team:               { flex: 1, alignItems: 'center', gap: 6 },
+  teamRight:          { alignItems: 'center' },
+  teamName:           { fontSize: 10, fontWeight: '600', color: '#fff', textAlign: 'center' },
+  teamNameMe:         { color: '#ffd700', fontWeight: '900' },
+  tbd:                { fontSize: 12, color: '#8888aa', fontWeight: '700' },
+  scoreBox:           { alignItems: 'center', paddingHorizontal: 12, gap: 2 },
+  score:              { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: 2 },
+  penalties:          { fontSize: 9, color: '#ffd700', fontWeight: '700' },
+  winnerTag:          { fontSize: 10, fontWeight: '900' },
+  vs:                 { fontSize: 14, fontWeight: '900', color: '#8888aa', letterSpacing: 2 },
+  matchDate:          { fontSize: 9, color: '#8888aa' },
 });

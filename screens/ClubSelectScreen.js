@@ -4,6 +4,7 @@ import { api } from '../utils/api';
 import { saveManagerData, loadSession } from '../utils/storage';
 import { buildAutoLineup } from '../utils/autoLineup';
 import ClubBadge from '../components/ClubBadge';
+import { Ionicons } from '@expo/vector-icons';
 
 
 
@@ -94,10 +95,12 @@ export default function ClubSelectScreen({ navigation, route }) {
               <ClubBadge club={{...item, id: String(item.id)}} size={52} />
               <View style={s.info}>
                 <Text style={[s.name, locked && s.dimmed]}>{item.name}</Text>
-                <Text style={[s.city, locked && s.dimmed]}>{item.city}</Text>
+
                 <View style={s.row}>
-                  <Text style={[s.stat, locked && s.dimmed]}>💰 £{item.budget}M</Text>
-                  <Text style={[s.stat, locked && s.dimmed]}>⭐ {item.rating}</Text>
+                  <Ionicons name='cash-outline' size={12} color='#00d4ff' />
+                  <Text style={{fontSize:11,color:'#00d4ff',fontWeight:'700'}}>£{item.budget?.toFixed(0)}M</Text>
+                  <Ionicons name='star-outline' size={12} color='#ffd700' style={{marginLeft:6}} />
+                  <Text style={{fontSize:11,color:'#ffd700',fontWeight:'700'}}>{item.rating}</Text>
                 </View>
               </View>
               {locked ? <Text style={s.lock}>🔒</Text> : <Text style={s.arrow}>›</Text>}
@@ -139,9 +142,9 @@ export default function ClubSelectScreen({ navigation, route }) {
                   </View>
                 </View>
                 <View style={s.divider} />
-                <Text style={s.modalSection}>🎯 ЦЕЛИ СЕЗОНА</Text>
+                <Ionicons name='flag-outline' size={14} color='#00d4ff' />
                 <Text style={s.modalText}>{selected?.goal}</Text>
-                <Text style={s.modalSection}>📋 ОЖИДАНИЯ</Text>
+                <Ionicons name='clipboard-outline' size={14} color='#8888aa' />
                 <Text style={s.modalText}>{selected?.expectations}</Text>
                 <View style={s.modalBtns}>
                   <TouchableOpacity style={s.btnDecline} onPress={() => setSelected(null)}>

@@ -18,6 +18,7 @@ const DEFAULT_NEWS = [
 
 export default function HomeScreen() {
   const [gameState, setGameState] = useState(null);
+  const [tick, setTick] = useState(0);
   const [managerName, setManagerName] = useState(null);
   const [playerCount, setPlayerCount] = useState(0);
   const [tactics, setTactics] = useState({ formation: '4-3-3', lineup: {} });
@@ -33,7 +34,10 @@ export default function HomeScreen() {
       loadData();
       loadTactics();
       // Обновляем каждые 60 секунд
-      const interval = setInterval(loadData, 60000);
+      const interval = setInterval(() => {
+        loadData();
+        setTick(t => t + 1);
+      }, 60000);
       return () => clearInterval(interval);
     }, [])
   );
