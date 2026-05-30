@@ -43,6 +43,7 @@ def user_response(user, db):
         "manager_name": user.manager_name,
         "rating": user.rating,
         "club_id": user.club_id,
+        "season": user.season,
         "club": {
             "id": club.id, "name": club.name, "city": club.city,
             "league": club.league, "primary": club.primary,
