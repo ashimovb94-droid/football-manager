@@ -155,3 +155,25 @@ def get_career(data: TokenData, db: Session = Depends(get_db)):
         f"SELECT * FROM career_history WHERE user_id = {user_id} ORDER BY season_number DESC"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
+
+@router.post("/pending-results")
+def get_pending_results(data: TokenData, db: Session = Depends(get_db)):
+    user_id = verify_token(data.token)
+    if not user_id:
+        return None
+    from sqlalchemy import text
+    import json
+    row = db.execute(text(f"SELECT pending_results FROM users WHERE id = {user_id}")).fetchone()
+    if row and row.pending_results:
+        return row.pending_results
+    return None
+
+@router.post("/clear-results")
+def clear_pending_results(data: TokenData, db: Session = Depends(get_db)):
+    user_id = verify_token(data.token)
+    if not user_id:
+        return {"ok": False}
+    from sqlalchemy import text
+    db.execute(text(f"UPDATE users SET pending_results = NULL WHERE id = {user_id}"))
+    db.commit()
+    return {"ok": True}

@@ -53,9 +53,13 @@ def run():
         # Симулируем матчи чья дата наступила
         _simulate_due_matches(db, season, now)
         
-        # Симулируем кубок
+        # Симулируем кубок — всегда до проверки завершения сезона
         _simulate_cup_matches(db, season, now)
         
+        # Симулируем все просроченные раунды кубка
+        for _ in range(6):
+            _simulate_cup_matches(db, season, now)
+
         # Проверяем завершён ли сезон
         for league in ['championship', 'epl']:
             remaining = db.query(Match).filter(
@@ -214,22 +218,23 @@ def _simulate_due_matches(db, season, now):
             print(f"[SEASON] Simulated {simulated} matches - {league} round {round_num}")
 
 def _simulate_cup_matches(db, season, now):
-    """Симулирует матчи кубка чья дата наступила"""
+    """Симулирует матчи кубка чья дата наступила — все сезоны"""
     today = now.strftime('%Y-%m-%d')
     
     due_rounds = db.execute(text(
-        f"SELECT DISTINCT round FROM cup_matches "
-        f"WHERE season_id = {season.id} AND status = 'scheduled' "
+        f"SELECT DISTINCT round, season_id FROM cup_matches "
+        f"WHERE status = 'scheduled' "
         f"AND home_id IS NOT NULL AND away_id IS NOT NULL "
-        f"AND date <= '{today}' ORDER BY round"
+        f"AND date <= '{today}' ORDER BY season_id, round"
     )).fetchall()
     
     for row in due_rounds:
         round_num = row.round
+        cup_season_id = row.season_id
         from app.routers.cup import simulate_cup_round
         # Вызываем напрямую
         matches = db.query(CupMatch).filter(
-            CupMatch.season_id == season.id,
+            CupMatch.season_id == cup_season_id,
             CupMatch.round == round_num,
             CupMatch.status == 'scheduled',
             CupMatch.home_id != None,
@@ -265,11 +270,11 @@ def _simulate_cup_matches(db, season, now):
         print(f"[CUP] Simulated round {round_num}")
 
 def _advance_cup(match, season_id, db):
-    if match.round >= 5: return
+    if match.round >= 6: return
     next_round = match.round + 1
     next_pos = match.bracket_pos // 2
     next_match = db.query(CupMatch).filter(
-        CupMatch.season_id == season_id,
+        CupMatch.season_id == match.season_id,
         CupMatch.round == next_round,
         CupMatch.bracket_pos == next_pos,
     ).first()
@@ -370,6 +375,30 @@ def _finish_league(db, season, league):
     db.execute(text("UPDATE transfer_offers SET status = 'expired' WHERE status = 'pending'"))
     db.commit()
     print('[LIFECYCLE] Transfer listings reset')
+
+    # Сохраняем результаты для показа игрокам
+    import json
+    users_to_notify = db.query(User).filter(User.club_id != None).all()
+    for user in users_to_notify:
+        my_s = next((s for s in standings if s.club_id == user.club_id), None)
+        if not my_s: continue
+        pos = [s.club_id for s in standings].index(user.club_id) + 1
+        club = db.query(Club).filter(Club.id == user.club_id).first()
+        results_data = {
+            'position': pos,
+            'points': my_s.points,
+            'won': my_s.won,
+            'drawn': my_s.drawn,
+            'lost': my_s.lost,
+            'gf': my_s.gf,
+            'ga': my_s.ga,
+            'league': league,
+            'club_name': club.name if club else '',
+            'season_number': user.season or 1,
+        }
+        db.execute(text(f"UPDATE users SET pending_results = :r WHERE id = {user.id}"), {'r': json.dumps(results_data)})
+    db.commit()
+    print('[LIFECYCLE] Results saved for players')
 
     # Стартуем новую предсезонку
     _start_new_preseason(db)
