@@ -22,13 +22,14 @@ export default function SplashScreen({ navigation }) {
         if (user && !user.detail) {
           if (user.club_id && user.club) {
             await saveManagerData(user.club, user.manager_name);
-            // Проверяем фазу игры
+            // Проверяем незакрытые итоги сезона
             try {
-              const state = await api.getGameState(session.token);
-              if (state?.phase === 'results') {
+              const pending = await api.getPendingResults(session.token);
+              if (pending && pending.position) {
                 navigation.replace('SeasonResult', {
-                  league: state.league,
-                  myClubId: state.club?.id
+                  league: pending.league,
+                  myClubId: session.user?.club_id,
+                  pendingResults: pending,
                 });
                 return;
               }

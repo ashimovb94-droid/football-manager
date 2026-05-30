@@ -55,6 +55,18 @@ export default function HomeScreen() {
     const state = await api.getGameState(token);
     if (state && !state.error) {
       setGameState(state);
+      // Проверяем незакрытые итоги
+      try {
+        const pending = await api.getPendingResults(token);
+        if (pending && pending.position) {
+          navigation.navigate('SeasonResult', {
+            league: pending.league,
+            myClubId: state.club?.id,
+            pendingResults: pending,
+          });
+          return;
+        }
+      } catch(e) {}
       if (state.club) {
         await saveManagerData(state.club, managerName);
         const p = await api.getPlayers(state.club.id);
@@ -135,17 +147,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Позиция в таблице */}
-        {standing && standing.played > 0 && (
-          <View style={s.standingCard}>
-            <Text style={s.standingPos}>#{standing.position}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={s.standingLabel}>МЕСТО В ТАБЛИЦЕ</Text>
-              <Text style={s.standingStats}>{standing.played} игр · {standing.points} очков · {standing.won}П {standing.drawn}Н {standing.lost}П</Text>
-            </View>
-            <LeagueBadge league={club?.league || 'championship'} size={20} />
-          </View>
-        )}
+
 
         {/* Предсезонка или матч */}
         {showPreseason ? (

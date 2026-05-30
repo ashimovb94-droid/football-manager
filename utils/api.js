@@ -193,6 +193,20 @@ export const api = {
     });
     return res.json();
   },
+  getPendingResults: async (token) => {
+    const res = await fetch(`${BASE_URL}/game/pending-results`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
+  clearPendingResults: async (token) => {
+    const res = await fetch(`${BASE_URL}/game/clear-results`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return res.json();
+  },
   getGameState: async (token) => {
     const res = await fetch(`${BASE_URL}/game/state`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
