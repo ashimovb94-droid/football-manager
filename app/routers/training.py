@@ -27,6 +27,9 @@ INDIVIDUAL_TRAININGS = {
     'gk':        { 'label': 'Вратарь',   'positions': ['GK'],                 'boost': 0.9 },
 }
 
+class TokenData(BaseModel):
+    token: str
+
 class TeamTrainingData(BaseModel):
     token: str
     focus: str
@@ -49,7 +52,7 @@ def get_status(token: str, db: Session = Depends(get_db)):
     if not user_id:
         raise HTTPException(status_code=401)
     rows = db.execute(text(
-        f"SELECT * FROM trainings WHERE user_id = {user_id} AND status = 'active' ORDER BY started_at DESC LIMIT 3"
+        f"SELECT * FROM trainings WHERE user_id = {user_id} AND status = 'active' ORDER BY started_at DESC LIMIT 10"
     )).fetchall()
     now = datetime.utcnow()
     result = []
@@ -123,7 +126,7 @@ def start_individual_training(data: IndividualTrainingData, db: Session = Depend
         raise HTTPException(status_code=404, detail="Игрок не найден")
     
     now = datetime.utcnow()
-    ends = now + timedelta(days=14)  # 2 игровые недели
+    ends = now + timedelta(days=3)  # 2 игровые недели
     
     db.execute(text(
         f"INSERT INTO trainings (user_id, type, focus, started_at, ends_at) "
@@ -167,3 +170,82 @@ def _apply_training(row, user_id, db):
             player.overall = min(99, round(player.overall + boost, 1))
     
     db.commit()
+
+@router.post("/auto-individual")
+def auto_individual(data: TokenData, db: Session = Depends(get_db)):
+    """Помощник автоматически назначает индивидуальные тренировки"""
+    user_id = verify_token(data.token)
+    if not user_id:
+        raise HTTPException(status_code=401)
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    players = db.query(Player).filter(Player.club_id == user.club_id).all()
+    
+    # Проверяем сколько активных
+    existing = db.execute(text(
+        f"SELECT COUNT(*) as cnt FROM trainings WHERE user_id = {user_id} AND type LIKE 'individual_%' AND status = 'active'"
+    )).fetchone()
+    active_count = existing.cnt if existing else 0
+    if active_count >= 4:
+        raise HTTPException(status_code=400, detail="Все слоты заняты")
+    
+    # Лучший выбор тренировки по позиции
+    BEST_TRAINING = {
+        'GK':  'gk',
+        'CB': 'defending', 'LB': 'defending', 'RB': 'defending',
+        'LWB': 'defending', 'RWB': 'defending',
+        'CDM': 'defending', 'CM': 'passing', 'CAM': 'passing',
+        'LM': 'speed', 'RM': 'speed',
+        'LW': 'speed', 'RW': 'speed', 'ST': 'shooting',
+    }
+    # Строгая проверка — вратари только gk, полевые не gk
+    def get_best_training(position):
+        if position == 'GK':
+            return 'gk'
+        t = BEST_TRAINING.get(position, 'passing')
+        if t == 'gk':
+            t = 'passing'
+        return t
+    
+    assigned = []
+    
+    # 4 тренера по линиям
+    GK_POS  = ["GK"]
+    DEF_POS = ["CB","LB","RB","LWB","RWB"]
+    MID_POS = ["CDM","CM","CAM","LM","RM"]
+    ATT_POS = ["ST","LW","RW"]
+    
+    def best_for_line(positions, focus):
+        line = [p for p in players if p.position in positions]
+        if not line: return None, None
+        # Слабейший игрок линии
+        return sorted(line, key=lambda p: p.overall)[0], focus
+    
+    candidates = [
+        best_for_line(GK_POS,  "gk"),
+        best_for_line(DEF_POS, "defending"),
+        best_for_line(MID_POS, "passing"),
+        best_for_line(ATT_POS, "shooting"),
+    ]
+    # Если нет игрока в линии - пропускаем
+    
+    for player, focus in candidates:
+        if not player or not focus: continue
+        now = datetime.utcnow()
+        ends = now + timedelta(days=3)
+        
+        # Проверяем не тренируется ли уже
+        ex = db.execute(text(
+            f"SELECT id FROM trainings WHERE user_id = {user_id} AND type = 'individual_{player.id}' AND status = 'active'"
+        )).fetchone()
+        if ex:
+            continue
+            
+        db.execute(text(
+            f"INSERT INTO trainings (user_id, type, focus, started_at, ends_at) "
+            f"VALUES ({user_id}, 'individual_{player.id}', '{focus}', '{now}', '{ends}')"
+        ))
+        assigned.append(f"{player.name} {player.surname} → {focus}")
+    
+    db.commit()
+    return {"success": True, "assigned": assigned}
