@@ -41,6 +41,9 @@ def run():
             db.close()
             return
         
+        # Проверяем трансферное окно
+        _check_transfer_window(db, now)
+
         # Восстановление усталости игроков каждый час
         _recover_fatigue(db)
 
@@ -78,6 +81,39 @@ def run():
         traceback.print_exc()
     finally:
         db.close()
+
+def _check_transfer_window(db, now):
+    """Генерирует новость при открытии/закрытии трансферного окна"""
+    from app.utils.news_helper import create_news
+    from app.models.user import User
+    
+    month_day = now.strftime("%m-%d")
+    hour = now.hour
+    
+    # Открытие летнего окна 1 июня
+    if month_day == "06-01" and hour == 0:
+        users = db.query(User).filter(User.club_id != None).all()
+        for u in users:
+            create_news(db, u.club_id, "transfer_window",
+                "Окно открыто до 31 августа. Самое время усилить состав.",
+                "cash-outline")
+    
+    # Закрытие летнего окна 1 сентября
+    elif month_day == "09-01" and hour == 0:
+        users = db.query(User).filter(User.club_id != None).all()
+        for u in users:
+            create_news(db, u.club_id, "transfer_window",
+                "Трансферное окно закрыто",
+                "Летнее окно закрыто. Следующее — январское.",
+                "lock-closed-outline")
+    
+    # Открытие зимнего окна 1 января
+    elif month_day == "01-01" and hour == 0:
+        users = db.query(User).filter(User.club_id != None).all()
+        for u in users:
+            create_news(db, u.club_id, "transfer_window",
+                "Январское окно открыто до 31 января.",
+                "snow-outline")
 
 def _recover_fatigue(db):
     """Восстанавливает усталость игроков на 2 единицы каждый час"""
